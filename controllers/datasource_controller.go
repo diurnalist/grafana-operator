@@ -25,8 +25,6 @@ import (
 	"strings"
 	"time"
 
-	v1 "k8s.io/api/core/v1"
-
 	simplejson "github.com/bitly/go-simplejson"
 	"github.com/grafana/grafana-openapi-client-go/client/datasources"
 	"github.com/grafana/grafana-openapi-client-go/models"
@@ -184,6 +182,9 @@ func (r *GrafanaDatasourceReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{}, nil
 	}
 
+	// Overwrite OrgID to ensure the field is useless
+	cr.Spec.Datasource.OrgID = nil
+
 	instances, err := r.GetMatchingDatasourceInstances(ctx, cr, r.Client)
 	if err != nil {
 		controllerLog.Error(err, "could not find matching instances", "name", cr.Name, "namespace", cr.Namespace)
@@ -198,7 +199,7 @@ func (r *GrafanaDatasourceReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		return ctrl.Result{RequeueAfter: RequeueDelay}, err
 	}
 
-	if cr.IsUpdatedUID(datasource.UID) {
+	if cr.IsUpdatedUID() {
 		controllerLog.Info("datasource uid got updated, deleting datasources with the old uid")
 		err = r.onDatasourceDeleted(ctx, req.Namespace, req.Name)
 		if err != nil {
@@ -260,7 +261,7 @@ func (r *GrafanaDatasourceReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		if cr.ResyncPeriodHasElapsed() {
 			cr.Status.LastResync = metav1.Time{Time: time.Now()}
 		}
-		cr.Status.UID = datasource.UID
+		cr.Status.UID = cr.CustomUIDOrUID()
 		return ctrl.Result{RequeueAfter: cr.GetResyncPeriod()}, r.Client.Status().Update(ctx, cr)
 	} else {
 		// if there was an issue with the datasource, update the status
@@ -447,13 +448,11 @@ func (r *GrafanaDatasourceReconciler) getDatasourceContent(ctx context.Context, 
 		return nil, "", err
 	}
 
-	if cr.Spec.Datasource.UID == "" {
-		simpleContent.Set("uid", string(cr.UID))
-	}
+	simpleContent.Set("uid", cr.CustomUIDOrUID())
 
 	for _, ref := range cr.Spec.ValuesFrom {
 		ref := ref
-		val, key, err := r.getReferencedValue(ctx, cr, &ref.ValueFrom)
+		val, key, err := getReferencedValue(ctx, r.Client, cr, ref.ValueFrom)
 		if err != nil {
 			return nil, "", err
 		}
@@ -484,30 +483,4 @@ func (r *GrafanaDatasourceReconciler) getDatasourceContent(ctx context.Context, 
 	hash.Write(newBytes)
 
 	return &res, fmt.Sprintf("%x", hash.Sum(nil)), nil
-}
-
-func (r *GrafanaDatasourceReconciler) getReferencedValue(ctx context.Context, cr *v1beta1.GrafanaDatasource, source *v1beta1.GrafanaDatasourceValueFromSource) (string, string, error) {
-	if source.SecretKeyRef != nil {
-		s := &v1.Secret{}
-		err := r.Client.Get(ctx, client.ObjectKey{Namespace: cr.Namespace, Name: source.SecretKeyRef.Name}, s)
-		if err != nil {
-			return "", "", err
-		}
-		if val, ok := s.Data[source.SecretKeyRef.Key]; ok {
-			return string(val), source.SecretKeyRef.Key, nil
-		} else {
-			return "", "", fmt.Errorf("missing key %s in secret %s", source.SecretKeyRef.Key, source.SecretKeyRef.Name)
-		}
-	} else {
-		s := &v1.ConfigMap{}
-		err := r.Client.Get(ctx, client.ObjectKey{Namespace: cr.Namespace, Name: source.ConfigMapKeyRef.Name}, s)
-		if err != nil {
-			return "", "", err
-		}
-		if val, ok := s.Data[source.ConfigMapKeyRef.Key]; ok {
-			return val, source.ConfigMapKeyRef.Key, nil
-		} else {
-			return "", "", fmt.Errorf("missing key %s in configmap %s", source.ConfigMapKeyRef.Key, source.ConfigMapKeyRef.Name)
-		}
-	}
 }

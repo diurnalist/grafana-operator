@@ -1,9 +1,13 @@
 package fetchers
 
 import (
+	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/grafana/grafana-operator/v5/api/v1beta1"
 	client2 "github.com/grafana/grafana-operator/v5/controllers/client"
@@ -12,7 +16,7 @@ import (
 
 const grafanaComDashboardApiUrlRoot = "https://grafana.com/api/dashboards"
 
-func FetchDashboardFromGrafanaCom(dashboard *v1beta1.GrafanaDashboard) ([]byte, error) {
+func FetchDashboardFromGrafanaCom(ctx context.Context, dashboard *v1beta1.GrafanaDashboard, c client.Client) ([]byte, error) {
 	cache := dashboard.GetContentCache()
 	if len(cache) > 0 {
 		return cache, nil
@@ -20,8 +24,10 @@ func FetchDashboardFromGrafanaCom(dashboard *v1beta1.GrafanaDashboard) ([]byte, 
 
 	source := dashboard.Spec.GrafanaCom
 
+	tlsConfig := client2.DefaultTLSConfiguration
+
 	if source.Revision == nil {
-		rev, err := getLatestGrafanaComRevision(dashboard)
+		rev, err := getLatestGrafanaComRevision(dashboard, tlsConfig)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get latest revision for dashboard id %d: %w", source.Id, err)
 		}
@@ -30,10 +36,10 @@ func FetchDashboardFromGrafanaCom(dashboard *v1beta1.GrafanaDashboard) ([]byte, 
 
 	dashboard.Spec.Url = fmt.Sprintf("%s/%d/revisions/%d/download", grafanaComDashboardApiUrlRoot, source.Id, *source.Revision)
 
-	return FetchDashboardFromUrl(dashboard)
+	return FetchDashboardFromUrl(ctx, dashboard, c, tlsConfig)
 }
 
-func getLatestGrafanaComRevision(dashboard *v1beta1.GrafanaDashboard) (int, error) {
+func getLatestGrafanaComRevision(dashboard *v1beta1.GrafanaDashboard, tlsConfig *tls.Config) (int, error) {
 	source := dashboard.Spec.GrafanaCom
 	url := fmt.Sprintf("%s/%d/revisions", grafanaComDashboardApiUrlRoot, source.Id)
 
@@ -42,7 +48,7 @@ func getLatestGrafanaComRevision(dashboard *v1beta1.GrafanaDashboard) (int, erro
 		return -1, err
 	}
 
-	client := client2.NewInstrumentedRoundTripper(fmt.Sprintf("%v/%v", dashboard.Namespace, dashboard.Name), metrics.GrafanaComApiRevisionRequests, true)
+	client := client2.NewInstrumentedRoundTripper(fmt.Sprintf("%v/%v", dashboard.Namespace, dashboard.Name), metrics.GrafanaComApiRevisionRequests, true, tlsConfig)
 	response, err := client.RoundTrip(request)
 	if err != nil {
 		return -1, err

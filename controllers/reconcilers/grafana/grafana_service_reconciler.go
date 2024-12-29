@@ -33,6 +33,7 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, cr *v1beta1.Grafana, 
 	service := model.GetGrafanaService(cr, scheme)
 
 	_, err := controllerutil.CreateOrUpdate(ctx, r.client, service, func() error {
+		model.SetCommonLabels(service)
 		service.Spec = v1.ServiceSpec{
 			Ports: getServicePorts(cr),
 			Selector: map[string]string{
@@ -48,8 +49,9 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, cr *v1beta1.Grafana, 
 
 	// try to assign the admin url
 	if !cr.PreferIngress() {
-		status.AdminUrl = fmt.Sprintf("%v://%v.%v:%d", getGrafanaServerProtocol(cr), service.Name, cr.Namespace,
-			int32(GetGrafanaPort(cr)))
+		// .svc suffix needed for automatic openshift certificates: https://docs.openshift.com/container-platform/4.17/security/certificates/service-serving-certificate.html#add-service-certificate_service-serving-certificate
+		status.AdminUrl = fmt.Sprintf("%v://%v.%v.svc:%d", getGrafanaServerProtocol(cr), service.Name, cr.Namespace,
+			int32(GetGrafanaPort(cr))) // #nosec G115
 	}
 
 	return v1beta1.OperatorStageResultSuccess, nil
@@ -80,7 +82,7 @@ func GetGrafanaPort(cr *v1beta1.Grafana) int {
 }
 
 func getServicePorts(cr *v1beta1.Grafana) []v1.ServicePort {
-	intPort := int32(GetGrafanaPort(cr))
+	intPort := int32(GetGrafanaPort(cr)) // #nosec G115
 
 	defaultPorts := []v1.ServicePort{
 		{

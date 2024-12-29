@@ -68,3 +68,15 @@ spec:
         file: 09-contactpoint.yaml
     - assert:
         file: 09-assert.yaml
+  - name: step-10
+    try:
+    - apply:
+        file: 10-notification-policy.yaml
+    - assert:
+        file: 10-assert.yaml
+  - name: step-11
+    try:
+    - apply:
+        file: 11-tls.yaml
+    - assert:
+        file: 11-assert.yaml

@@ -89,6 +89,20 @@ type External struct {
 	AdminUser *v1.SecretKeySelector `json:"adminUser,omitempty"`
 	// AdminPassword key to talk to the external grafana instance.
 	AdminPassword *v1.SecretKeySelector `json:"adminPassword,omitempty"`
+	// DEPRECATED, use top level `tls` instead.
+	// +optional
+	TLS *TLSConfig `json:"tls,omitempty"`
+}
+
+// TLSConfig specifies options to use when communicating with the Grafana endpoint
+// +kubebuilder:validation:XValidation:rule="(has(self.insecureSkipVerify) && !(has(self.certSecretRef))) || (has(self.certSecretRef) && !(has(self.insecureSkipVerify)))", message="insecureSkipVerify and certSecretRef cannot be set at the same time"
+type TLSConfig struct {
+	// Disable the CA check of the server
+	// +optional
+	InsecureSkipVerify bool `json:"insecureSkipVerify,omitempty"`
+	// Use a secret as a reference to give TLS Certificate information
+	// +optional
+	CertSecretRef *v1.SecretReference `json:"certSecretRef,omitempty"`
 }
 
 type JsonnetConfig struct {
@@ -102,6 +116,12 @@ type GrafanaClient struct {
 	// +nullable
 	// If the operator should send it's request through the grafana instances ingress object instead of through the service.
 	PreferIngress *bool `json:"preferIngress,omitempty"`
+	// TLS Configuration used to talk with the grafana instance.
+	// +optional
+	TLS *TLSConfig `json:"tls,omitempty"`
+	// Custom HTTP headers to use when interacting with this Grafana.
+	// +optional
+	Headers map[string]string `json:"headers,omitempty"`
 }
 
 // GrafanaPreferences holds Grafana preferences API settings
@@ -121,14 +141,15 @@ type GrafanaStatus struct {
 	Version     string                 `json:"version,omitempty"`
 }
 
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
 
 // Grafana is the Schema for the grafanas API
 // +kubebuilder:printcolumn:name="Version",type="string",JSONPath=".status.version",description=""
 // +kubebuilder:printcolumn:name="Stage",type="string",JSONPath=".status.stage",description=""
 // +kubebuilder:printcolumn:name="Stage status",type="string",JSONPath=".status.stageStatus",description=""
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description=""
+// +kubebuilder:resource:categories={grafana-operator}
 type Grafana struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -136,7 +157,7 @@ type Grafana struct {
 	Status            GrafanaStatus `json:"status,omitempty"`
 }
 
-//+kubebuilder:object:root=true
+// +kubebuilder:object:root=true
 
 // GrafanaList contains a list of Grafana
 type GrafanaList struct {

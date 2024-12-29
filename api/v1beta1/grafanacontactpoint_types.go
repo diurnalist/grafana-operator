@@ -25,7 +25,13 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 // GrafanaContactPointSpec defines the desired state of GrafanaContactPoint
+// +kubebuilder:validation:XValidation:rule="((!has(oldSelf.uid) && !has(self.uid)) || (has(oldSelf.uid) && has(self.uid)))", message="spec.uid is immutable"
 type GrafanaContactPointSpec struct {
+	// Manually specify the UID the Contact Point is created with
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="spec.uid is immutable"
+	CustomUID string `json:"uid,omitempty"`
+
 	// +optional
 	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:Format=duration
@@ -45,6 +51,9 @@ type GrafanaContactPointSpec struct {
 
 	Settings *apiextensions.JSON `json:"settings"`
 
+	// +kubebuilder:validation:MaxItems=99
+	ValuesFrom []ValueFrom `json:"valuesFrom,omitempty"`
+
 	// +kubebuilder:validation:Enum=alertmanager;prometheus-alertmanager;dingding;discord;email;googlechat;kafka;line;opsgenie;pagerduty;pushover;sensugo;sensu;slack;teams;telegram;threema;victorops;webhook;wecom;hipchat;oncall
 	Type string `json:"type,omitempty"`
 
@@ -63,6 +72,7 @@ type GrafanaContactPointStatus struct {
 //+kubebuilder:subresource:status
 
 // GrafanaContactPoint is the Schema for the grafanacontactpoints API
+// +kubebuilder:resource:categories={grafana-operator}
 type GrafanaContactPoint struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -78,6 +88,14 @@ type GrafanaContactPointList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []GrafanaContactPoint `json:"items"`
+}
+
+// Wrapper around CustomUID or default metadata.uid
+func (in *GrafanaContactPoint) CustomUIDOrUID() string {
+	if in.Spec.CustomUID != "" {
+		return in.Spec.CustomUID
+	}
+	return string(in.ObjectMeta.UID)
 }
 
 func init() {

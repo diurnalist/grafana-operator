@@ -7,9 +7,9 @@ import (
 	"github.com/grafana/grafana-operator/v5/api/v1beta1"
 	"github.com/grafana/grafana-operator/v5/controllers/model"
 	"github.com/grafana/grafana-operator/v5/controllers/reconcilers"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -26,33 +26,20 @@ func NewPluginsReconciler(client client.Client) reconcilers.OperatorGrafanaRecon
 func (r *PluginsReconciler) Reconcile(ctx context.Context, cr *v1beta1.Grafana, status *v1beta1.GrafanaStatus, vars *v1beta1.OperatorReconcileVars, scheme *runtime.Scheme) (v1beta1.OperatorStageStatus, error) {
 	logger := log.FromContext(ctx).WithName("PluginsReconciler")
 
+	vars.Plugins = ""
+
 	plugins := model.GetPluginsConfigMap(cr, scheme)
-	selector := client.ObjectKey{
-		Namespace: plugins.Namespace,
-		Name:      plugins.Name,
-	}
-
-	err := r.client.Get(ctx, selector, plugins)
-
-	// plugins config map not found, we need to create it
-	if err != nil && errors.IsNotFound(err) {
-		err = r.client.Create(ctx, plugins)
-		if err != nil {
-			logger.Error(err, "error creating plugins config map", "name", plugins.Name, "namespace", plugins.Namespace)
-			return v1beta1.OperatorStageResultFailed, err
-		}
-
-		// no plugins yet, assign plugins to empty string
-		vars.Plugins = ""
-
-		return v1beta1.OperatorStageResultSuccess, nil
-	} else if err != nil {
+	_, err := controllerutil.CreateOrUpdate(ctx, r.client, plugins, func() error {
+		model.SetCommonLabels(plugins)
+		return nil
+	})
+	if err != nil {
 		logger.Error(err, "error getting plugins config map", "name", plugins.Name, "namespace", plugins.Namespace)
 		return v1beta1.OperatorStageResultFailed, err
 	}
 
 	// plugins config map found, but may be empty
-	if plugins.BinaryData == nil || len(plugins.BinaryData) == 0 {
+	if len(plugins.BinaryData) == 0 {
 		vars.Plugins = ""
 		return v1beta1.OperatorStageResultSuccess, nil
 	}

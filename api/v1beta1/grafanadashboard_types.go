@@ -45,11 +45,28 @@ type GrafanaDashboardDatasource struct {
 	DatasourceName string `json:"datasourceName"`
 }
 
+type GrafanaDashboardUrlBasicAuth struct {
+	Username *v1.SecretKeySelector `json:"username,omitempty"`
+	Password *v1.SecretKeySelector `json:"password,omitempty"`
+}
+
+type GrafanaDashboardUrlAuthorization struct {
+	BasicAuth *GrafanaDashboardUrlBasicAuth `json:"basicAuth,omitempty"`
+}
+
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 // GrafanaDashboardSpec defines the desired state of GrafanaDashboard
+// +kubebuilder:validation:XValidation:rule="(has(self.folderUID) && !(has(self.folderRef))) || (has(self.folderRef) && !(has(self.folderUID))) || !(has(self.folderRef) && (has(self.folderUID)))", message="Only one of folderUID or folderRef can be declared at the same time"
+// +kubebuilder:validation:XValidation:rule="(has(self.folder) && !(has(self.folderRef) || has(self.folderUID))) || !(has(self.folder))", message="folder field cannot be set when folderUID or folderRef is already declared"
+// +kubebuilder:validation:XValidation:rule="((!has(oldSelf.uid) && !has(self.uid)) || (has(oldSelf.uid) && has(self.uid)))", message="spec.uid is immutable"
 type GrafanaDashboardSpec struct {
+	// Manually specify the uid for the dashboard, overwrites uids already present in the json model
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="spec.uid is immutable"
+	CustomUID string `json:"uid,omitempty"`
+
 	// dashboard json
 	// +optional
 	Json string `json:"json,omitempty"`
@@ -61,6 +78,10 @@ type GrafanaDashboardSpec struct {
 	// dashboard url
 	// +optional
 	Url string `json:"url,omitempty"`
+
+	// authorization options for dashboard from url
+	// +optional
+	UrlAuthorization *GrafanaDashboardUrlAuthorization `json:"urlAuthorization,omitempty"`
 
 	// Jsonnet
 	// +optional
@@ -84,6 +105,14 @@ type GrafanaDashboardSpec struct {
 	// folder assignment for dashboard
 	// +optional
 	FolderTitle string `json:"folder,omitempty"`
+
+	// UID of the target folder for this dashboard
+	// +optional
+	FolderUID string `json:"folderUID,omitempty"`
+
+	// Name of a `GrafanaFolder` resource in the same namespace
+	// +optional
+	FolderRef string `json:"folderRef,omitempty"`
 
 	// plugins
 	// +optional
@@ -120,7 +149,7 @@ type GrafanaDashboardSpec struct {
 
 type GrafanaDashboardEnv struct {
 	Name string `json:"name"`
-	// Inline evn value
+	// Inline env value
 	// +optional
 	Value string `json:"value,omitempty"`
 	// Reference on value source, might be the reference on a secret or config map
@@ -160,6 +189,8 @@ type GrafanaDashboardStatus struct {
 	// Last time the dashboard was resynced
 	LastResync metav1.Time `json:"lastResync,omitempty"`
 	UID        string      `json:"uid,omitempty"`
+
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -169,6 +200,7 @@ type GrafanaDashboardStatus struct {
 // +kubebuilder:printcolumn:name="No matching instances",type="boolean",JSONPath=".status.NoMatchingInstances",description=""
 // +kubebuilder:printcolumn:name="Last resync",type="date",format="date-time",JSONPath=".status.lastResync",description=""
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description=""
+// +kubebuilder:resource:categories={grafana-operator}
 type GrafanaDashboard struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -184,6 +216,44 @@ type GrafanaDashboardList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []GrafanaDashboard `json:"items"`
+}
+
+// FolderRef implements FolderReferencer.
+func (in *GrafanaDashboard) FolderRef() string {
+	return in.Spec.FolderRef
+}
+
+// FolderUID implements FolderReferencer.
+func (in *GrafanaDashboard) FolderUID() string {
+	return in.Spec.FolderUID
+}
+
+// Wrapper around CustomUID, dashboardModelUID or default metadata.uid
+func (in *GrafanaDashboard) CustomUIDOrUID(dashboardUID string) string {
+	if in.Spec.CustomUID != "" {
+		return in.Spec.CustomUID
+	}
+
+	if dashboardUID != "" {
+		return dashboardUID
+	}
+
+	return string(in.ObjectMeta.UID)
+}
+
+// FolderNamespace implements FolderReferencer.
+func (in *GrafanaDashboard) FolderNamespace() string {
+	return in.Namespace
+}
+
+// Conditions implements FolderReferencer.
+func (in *GrafanaDashboard) Conditions() *[]metav1.Condition {
+	return &in.Status.Conditions
+}
+
+// CurrentGeneration implements FolderReferencer.
+func (in *GrafanaDashboard) CurrentGeneration() int64 {
+	return in.Generation
 }
 
 func (in *GrafanaDashboard) Unchanged(hash string) bool {
@@ -280,9 +350,7 @@ func (in *GrafanaDashboard) IsUpdatedUID(uid string) bool {
 		return false
 	}
 
-	if uid == "" {
-		uid = string(in.UID)
-	}
+	uid = in.CustomUIDOrUID(uid)
 
 	return in.Status.UID != uid
 }

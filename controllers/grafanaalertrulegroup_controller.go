@@ -143,7 +143,9 @@ func (r *GrafanaAlertRuleGroupReconciler) Reconcile(ctx context.Context, req ctr
 	}
 	condition := buildSynchronizedCondition("Alert Rule Group", conditionAlertGroupSynchronized, group.Generation, applyErrors, len(instances))
 	meta.SetStatusCondition(&group.Status.Conditions, condition)
-
+	if len(applyErrors) > 0 {
+		return ctrl.Result{}, fmt.Errorf("failed to apply to all instances: %v", applyErrors)
+	}
 	return ctrl.Result{RequeueAfter: group.Spec.ResyncPeriod.Duration}, nil
 }
 
@@ -160,7 +162,12 @@ func (r *GrafanaAlertRuleGroupReconciler) reconcileWithInstance(ctx context.Cont
 	if err != nil {
 		return fmt.Errorf("building grafana client: %w", err)
 	}
-	strue := "true"
+
+	trueRef := "true"
+	editable := true
+	if group.Spec.Editable != nil && !*group.Spec.Editable {
+		editable = false
+	}
 
 	_, err = cl.Folders.GetFolderByUID(folderUID) //nolint:errcheck
 	if err != nil {
@@ -171,7 +178,8 @@ func (r *GrafanaAlertRuleGroupReconciler) reconcileWithInstance(ctx context.Cont
 		return fmt.Errorf("fetching folder: %w", err)
 	}
 
-	applied, err := cl.Provisioning.GetAlertRuleGroup(group.Name, folderUID)
+	groupName := group.GroupName()
+	applied, err := cl.Provisioning.GetAlertRuleGroup(groupName, folderUID)
 	var ruleNotFound *provisioning.GetAlertRuleGroupNotFound
 	if err != nil && !errors.As(err, &ruleNotFound) {
 		return fmt.Errorf("fetching existing alert rule group: %w", err)
@@ -196,7 +204,7 @@ func (r *GrafanaAlertRuleGroupReconciler) reconcileWithInstance(ctx context.Cont
 			IsPaused:     rule.IsPaused,
 			Labels:       rule.Labels,
 			NoDataState:  rule.NoDataState,
-			RuleGroup:    &group.Name,
+			RuleGroup:    &groupName,
 			Title:        &rule.Title,
 			UID:          rule.UID,
 		}
@@ -222,16 +230,20 @@ func (r *GrafanaAlertRuleGroupReconciler) reconcileWithInstance(ctx context.Cont
 		if _, ok := currentRules[rule.UID]; ok {
 			params := provisioning.NewPutAlertRuleParams().
 				WithBody(apiRule).
-				WithXDisableProvenance(&strue).
 				WithUID(rule.UID)
+			if editable {
+				params.SetXDisableProvenance(&trueRef)
+			}
 			_, err := cl.Provisioning.PutAlertRule(params) //nolint:errcheck
 			if err != nil {
 				return fmt.Errorf("updating rule: %w", err)
 			}
 		} else {
 			params := provisioning.NewPostAlertRuleParams().
-				WithBody(apiRule).
-				WithXDisableProvenance(&strue)
+				WithBody(apiRule)
+			if editable {
+				params.SetXDisableProvenance(&trueRef)
+			}
 			_, err = cl.Provisioning.PostAlertRule(params) //nolint:errcheck
 			if err != nil {
 				return fmt.Errorf("creating rule: %w", err)
@@ -244,8 +256,10 @@ func (r *GrafanaAlertRuleGroupReconciler) reconcileWithInstance(ctx context.Cont
 	for uid, present := range currentRules {
 		if !present {
 			params := provisioning.NewDeleteAlertRuleParams().
-				WithUID(uid).
-				WithXDisableProvenance(&strue)
+				WithUID(uid)
+			if editable {
+				params.SetXDisableProvenance(&trueRef)
+			}
 			_, err := cl.Provisioning.DeleteAlertRule(params) //nolint:errcheck
 			if err != nil {
 				return fmt.Errorf("deleting old alert rule %s: %w", uid, err)
@@ -261,9 +275,11 @@ func (r *GrafanaAlertRuleGroupReconciler) reconcileWithInstance(ctx context.Cont
 	}
 	params := provisioning.NewPutAlertRuleGroupParams().
 		WithBody(mGroup).
-		WithGroup(group.Name).
-		WithFolderUID(folderUID).
-		WithXDisableProvenance(&strue)
+		WithGroup(groupName).
+		WithFolderUID(folderUID)
+	if editable {
+		params.SetXDisableProvenance(&trueRef)
+	}
 	_, err = cl.Provisioning.PutAlertRuleGroup(params) //nolint:errcheck
 	if err != nil {
 		return fmt.Errorf("updating group: %s", err.Error())
@@ -295,7 +311,7 @@ func (r *GrafanaAlertRuleGroupReconciler) removeFromInstance(ctx context.Context
 	if err != nil {
 		return fmt.Errorf("building grafana client: %w", err)
 	}
-	remote, err := cl.Provisioning.GetAlertRuleGroup(group.Name, folderUID)
+	remote, err := cl.Provisioning.GetAlertRuleGroup(group.GroupName(), folderUID)
 	if err != nil {
 		var notFound *provisioning.GetAlertRuleGroupNotFound
 		if errors.As(err, &notFound) {

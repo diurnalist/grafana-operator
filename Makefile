@@ -1,8 +1,5 @@
-###
-# NOTE: this section almost matches outputs out kubebuilder v3.7.0
-###
 # Current Operator version
-VERSION ?= 5.10.0
+VERSION ?= 5.15.1
 
 # BUNDLE_GEN_FLAGS are the flags passed to the operator-sdk generate bundle command
 BUNDLE_GEN_FLAGS ?= -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
@@ -15,13 +12,6 @@ ifeq ($(USE_IMAGE_DIGESTS), true)
 	BUNDLE_GEN_FLAGS += --use-image-digests
 endif
 
-# Set the Operator SDK version to use. By default, what is installed on the system is used.
-# This is useful for CI or a project to utilize a specific version of the operator-sdk toolkit.
-OPERATOR_SDK_VERSION ?= v1.32.0
-
-OPM_VERSION ?= v1.23.2
-YQ_VERSION ?= v4.35.2
-
 # Read Grafana Image and Version from go code
 GRAFANA_IMAGE := $(shell grep 'GrafanaImage' controllers/config/operator_constants.go | sed 's/.*"\(.*\)".*/\1/')
 GRAFANA_VERSION := $(shell grep 'GrafanaVersion' controllers/config/operator_constants.go | sed 's/.*"\(.*\)".*/\1/')
@@ -31,7 +21,7 @@ REGISTRY ?= ghcr.io
 ORG ?= grafana
 IMG ?= $(REGISTRY)/$(ORG)/grafana-operator:v$(VERSION)
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.25.0
+ENVTEST_K8S_VERSION = 1.28.0
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -40,7 +30,7 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-CHAINSAW_VERSION ?= v0.1.9
+CHAINSAW_VERSION ?= v0.2.10
 
 # Checks if chainsaw is in your PATH
 ifneq ($(shell which chainsaw),)
@@ -55,7 +45,7 @@ SHELL = /usr/bin/env bash -o pipefail
 .SHELLFLAGS = -ec
 
 .PHONY: all
-all: manifests test api-docs
+all: manifests test api-docs helm/docs
 
 ##@ General
 
@@ -74,30 +64,13 @@ all: manifests test api-docs
 help: ## Display this help.
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
-.PHONY: yq
-YQ = ./bin/yq
-yq: ## Download yq locally if necessary.
-ifeq (,$(wildcard $(YQ)))
-ifeq (,$(shell which yq 2>/dev/null))
-	@{ \
-	set -e ;\
-	mkdir -p $(dir $(YQ)) ;\
-	OSTYPE=$(shell uname | awk '{print tolower($0)}') && ARCH=$(shell go env GOARCH) && \
-	curl -sSLo $(YQ) https://github.com/mikefarah/yq/releases/download/$(YQ_VERSION)/yq_$${OSTYPE}_$${ARCH} ;\
-	chmod +x $(YQ) ;\
-	}
-else
-YQ = $(shell which yq)
-endif
-endif
-
 ##@ Development
 
 .PHONY: manifests
 manifests: yq controller-gen kustomize ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
 	$(CONTROLLER_GEN) rbac:roleName=manager-role webhook paths="./..." crd output:crd:artifacts:config=config/crd/bases
 	$(CONTROLLER_GEN) rbac:roleName=manager-role webhook paths="./..." crd output:crd:artifacts:config=deploy/helm/grafana-operator/crds
-	yq -i '(select(.kind == "Deployment") | .spec.template.spec.containers[0].env[] | select (.name == "RELATED_IMAGE_GRAFANA")).value="$(GRAFANA_IMAGE):$(GRAFANA_VERSION)"' config/manager/manager.yaml
+	$(YQ) -i '(select(.kind == "Deployment") | .spec.template.spec.containers[0].env[] | select (.name == "RELATED_IMAGE_GRAFANA")).value="$(GRAFANA_IMAGE):$(GRAFANA_VERSION)"' config/manager/manager.yaml
 
 	# NOTE: As we publish the whole kustomize folder structure (deploy/kustomize) as an OCI arfifact via flux, in kustomization.yaml, we cannot reference files that reside outside of deploy/kustomize. Thus, we need to maintain an additional copy of CRDs and the ClusterRole
 	$(KUSTOMIZE) build config/crd -o deploy/kustomize/base/crds.yaml
@@ -105,8 +78,8 @@ manifests: yq controller-gen kustomize ## Generate WebhookConfiguration, Cluster
 
 	# Sync role definitions to helm chart
 	mkdir -p deploy/helm/grafana-operator/files
-	cat config/rbac/role.yaml | yq -r 'del(.rules[] | select (.apiGroups | contains(["route.openshift.io"])))' > deploy/helm/grafana-operator/files/rbac.yaml
-	cat config/rbac/role.yaml | yq -r 'del(.rules[] | select (.apiGroups | contains(["route.openshift.io"]) | not))'  > deploy/helm/grafana-operator/files/rbac-openshift.yaml
+	cat config/rbac/role.yaml | $(YQ) -r 'del(.rules[] | select (.apiGroups | contains(["route.openshift.io"])))' > deploy/helm/grafana-operator/files/rbac.yaml
+	cat config/rbac/role.yaml | $(YQ) -r 'del(.rules[] | select (.apiGroups | contains(["route.openshift.io"]) | not))'  > deploy/helm/grafana-operator/files/rbac-openshift.yaml
 
 # Generate API reference documentation
 api-docs: manifests gen-crd-api-reference-docs
@@ -121,7 +94,7 @@ vet: ## Run go vet against code.
 	go vet ./...
 
 .PHONY: test
-test: manifests generate code/gofumpt api-docs vet envtest ## Run tests.
+test: manifests generate code/gofumpt code/golangci-lint api-docs vet envtest ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test ./... -coverprofile cover.out
 
 ##@ Build
@@ -161,6 +134,10 @@ deploy-chainsaw: manifests kustomize ## Deploy controller to the K8s cluster spe
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build config/default | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
 
+.PHONY: start-kind
+start-kind: kind ## Start kind cluster locally
+	@hack/kind/start-kind.sh
+
 ##@ Build Dependencies
 
 ## Location to install dependencies to
@@ -169,13 +146,22 @@ $(LOCALBIN):
 	mkdir -p $(LOCALBIN)
 
 ## Tool Binaries
+OPERATOR_SDK ?= $(LOCALBIN)/operator-sdk
 KUSTOMIZE ?= $(LOCALBIN)/kustomize
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
+YQ = $(LOCALBIN)/yq
+KIND = $(LOCALBIN)/kind
 
 ## Tool Versions
+# Set the Operator SDK version to use. By default, what is installed on the system is used.
+# This is useful for CI or a project to utilize a specific version of the operator-sdk toolkit.
+OPERATOR_SDK_VERSION ?= v1.32.0
 KUSTOMIZE_VERSION ?= v5.1.1
-CONTROLLER_TOOLS_VERSION ?= v0.14.0
+CONTROLLER_TOOLS_VERSION ?= v0.16.3
+OPM_VERSION ?= v1.23.2
+YQ_VERSION ?= v4.35.2
+KIND_VERSION ?= v0.24.0
 
 KUSTOMIZE_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"
 .PHONY: kustomize
@@ -194,7 +180,6 @@ $(ENVTEST): $(LOCALBIN)
 	test -s $(LOCALBIN)/setup-envtest || GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
 
 .PHONY: operator-sdk
-OPERATOR_SDK ?= $(LOCALBIN)/operator-sdk
 operator-sdk: ## Download operator-sdk locally if necessary.
 ifeq (,$(wildcard $(OPERATOR_SDK)))
 ifeq (, $(shell which operator-sdk 2>/dev/null))
@@ -210,9 +195,37 @@ OPERATOR_SDK = $(shell which operator-sdk)
 endif
 endif
 
-###
-# END OF kubebuilder SECTION
-###
+.PHONY: yq
+yq: ## Download yq locally if necessary.
+ifeq (,$(wildcard $(YQ)))
+ifeq (,$(shell which yq 2>/dev/null))
+	@{ \
+	set -e ;\
+	mkdir -p $(dir $(YQ)) ;\
+	OSTYPE=$(shell uname | awk '{print tolower($$0)}') && ARCH=$(shell go env GOARCH) && \
+	curl -sSLo $(YQ) https://github.com/mikefarah/yq/releases/download/$(YQ_VERSION)/yq_$${OSTYPE}_$${ARCH} ;\
+	chmod +x $(YQ) ;\
+	}
+else
+YQ = $(shell which yq)
+endif
+endif
+
+.PHONY: kind
+kind: ## Download kind locally if necessary.
+ifeq (,$(wildcard $(KIND)))
+ifeq (,$(shell which kind 2>/dev/null))
+	@{ \
+	set -e ;\
+	mkdir -p $(dir $(KIND)) ;\
+	OSTYPE=$(shell uname | awk '{print tolower($$0)}') && ARCH=$(shell go env GOARCH) && \
+	curl -sSLo $(KIND) https://github.com/kubernetes-sigs/kind/releases/download/$(KIND_VERSION)/kind-$${OSTYPE}-$${ARCH} ;\
+	chmod +x $(KIND) ;\
+	}
+else
+KIND = $(shell which kind)
+endif
+endif
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "candidate,fast,stable")
@@ -248,9 +261,18 @@ bundle/redhat: BUNDLE_GEN_FLAGS += --use-image-digests
 bundle/redhat: bundle
 
 # e2e
+.PHONY: e2e-kind
+e2e-kind:
+ifeq (,$(shell kind get clusters $(KIND_CLUSTER_NAME)))
+	$(KIND) --kubeconfig="${KUBECONFIG}" create cluster --image=kindest/node:v$(ENVTEST_K8S_VERSION) --config tests/e2e/kind.yaml
+endif
+
+.PHONY: e2e-local-gh-actions
+e2e-local-gh-actions: e2e-kind ko-build-kind e2e
+
 .PHONY: e2e
 e2e: chainsaw install deploy-chainsaw ## Run e2e tests using chainsaw.
-	$(CHAINSAW) test --test-dir ./tests/e2e
+	$(CHAINSAW) test --test-dir ./tests/e2e/$(TESTS)
 
 # Find or download chainsaw
 chainsaw:
@@ -268,7 +290,7 @@ golangci:
 ifeq (, $(shell which golangci-lint))
 	@{ \
 	set -e ;\
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.56.2 ;\
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.62.0 ;\
 	}
 GOLANGCI=$(GOBIN)/golangci-lint
 else
@@ -309,16 +331,14 @@ export KO_DOCKER_REPO ?= ko.local/grafana/grafana-operator
 export KIND_CLUSTER_NAME ?= kind-grafana
 export KUBECONFIG        ?= ${HOME}/.kube/kind-grafana-operator
 
-# If you want to push ko to your local Docker daemon
 .PHONY: ko-build-local
-ko-build-local: ko
+ko-build-local: ko ## Build Docker image with KO
 	$(KO) build --sbom=none --bare
 
-# If you want to push ko to your kind cluster
 .PHONY: ko-build-kind
-ko-build-kind: ko
-	$(KO) build --sbom=none --bare
-	kind load docker-image $(KO_DOCKER_REPO) --name $(KIND_CLUSTER_NAME)
+ko-build-kind: ko-build-local ## Build and Load Docker image into kind cluster
+	$(KIND) load docker-image $(KO_DOCKER_REPO) --name $(KIND_CLUSTER_NAME)
+
 helm-docs:
 ifeq (, $(shell which helm-docs))
 	@{ \
@@ -329,9 +349,6 @@ HELM_DOCS=$(GOBIN)/helm-docs
 else
 HELM_DOCS=$(shell which helm-docs)
 endif
-
-start-kind:
-	@hack/kind/start-kind.sh
 
 .PHONY: helm/docs
 helm/docs: helm-docs
@@ -403,3 +420,11 @@ API_REF_GEN=$(GOBIN)/crdoc
 else
 API_REF_GEN=$(shell which crdoc)
 endif
+
+.PHONY: prep-release
+prep-release: yq
+	$(YQ) -i '.version="v$(VERSION)"' deploy/helm/grafana-operator/Chart.yaml
+	$(YQ) -i '.appVersion="v$(VERSION)"' deploy/helm/grafana-operator/Chart.yaml
+	$(YQ) -i '.params.version="v$(VERSION)"' hugo/config.yaml
+	sed -i 's/--version v5.*/--version v$(VERSION)/g' README.md
+	make helm/docs

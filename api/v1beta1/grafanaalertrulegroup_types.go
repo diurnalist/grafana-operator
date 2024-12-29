@@ -25,7 +25,12 @@ import (
 
 // GrafanaAlertRuleGroupSpec defines the desired state of GrafanaAlertRuleGroup
 // +kubebuilder:validation:XValidation:rule="(has(self.folderUID) && !(has(self.folderRef))) || (has(self.folderRef) && !(has(self.folderUID)))", message="Only one of FolderUID or FolderRef can be set"
+// +kubebuilder:validation:XValidation:rule="((!has(oldSelf.editable) && !has(self.editable)) || (has(oldSelf.editable) && has(self.editable)))", message="spec.editable is immutable"
 type GrafanaAlertRuleGroupSpec struct {
+	// +optional
+	// Name of the alert rule group. If not specified, the resource name will be used.
+	Name string `json:"name,omitempty"`
+
 	// +optional
 	// +kubebuilder:validation:Type=string
 	// +kubebuilder:validation:Format=duration
@@ -54,6 +59,11 @@ type GrafanaAlertRuleGroupSpec struct {
 
 	// +optional
 	AllowCrossNamespaceImport *bool `json:"allowCrossNamespaceImport,omitempty"`
+
+	// Whether to enable or disable editing of the alert rule group in Grafana UI
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Value is immutable"
+	// +optional
+	Editable *bool `json:"editable,omitempty"`
 }
 
 // AlertRule defines a specific rule to be evaluated. It is based on the upstream model with some k8s specific type mappings
@@ -128,12 +138,22 @@ type GrafanaAlertRuleGroupStatus struct {
 //+kubebuilder:subresource:status
 
 // GrafanaAlertRuleGroup is the Schema for the grafanaalertrulegroups API
+// +kubebuilder:resource:categories={grafana-operator}
 type GrafanaAlertRuleGroup struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   GrafanaAlertRuleGroupSpec   `json:"spec,omitempty"`
 	Status GrafanaAlertRuleGroupStatus `json:"status,omitempty"`
+}
+
+// GroupName returns the name of alert rule group.
+func (in *GrafanaAlertRuleGroup) GroupName() string {
+	groupName := in.Spec.Name
+	if groupName == "" {
+		groupName = in.Name
+	}
+	return groupName
 }
 
 // CurrentGeneration implements FolderReferencer.

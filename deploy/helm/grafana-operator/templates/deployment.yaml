@@ -18,7 +18,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "grafana-operator.selectorLabels" . | nindent 8 }}
+        {{- include "grafana-operator.labels" . | nindent 8 }}
         app.kubernetes.io/component: operator
     spec:
       {{- with .Values.imagePullSecrets }}
@@ -57,6 +57,10 @@ spec:
           args:
             - --health-probe-bind-address=:8081
             - --metrics-bind-address=0.0.0.0:{{ .Values.metricsService.metricsPort }}
+            - --pprof-addr=0.0.0.0:{{ .Values.metricsService.pprofPort }}
+            - --zap-encoder={{ .Values.logging.encoder }}
+            - --zap-log-level={{ .Values.logging.level }}
+            - --zap-time-encoding={{ .Values.logging.time }}
             {{- if .Values.leaderElect }}
             - --leader-elect
             {{- end }}
@@ -66,6 +70,9 @@ spec:
           ports:
             - containerPort: {{ .Values.metricsService.metricsPort }}
               name: metrics
+              protocol: TCP
+            - containerPort: {{ .Values.metricsService.pprofPort }}
+              name: pprof
               protocol: TCP
           livenessProbe:
             httpGet:

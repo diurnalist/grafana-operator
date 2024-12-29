@@ -3,7 +3,7 @@ package grafana
 import (
 	"context"
 	"fmt"
-	"os"
+	"strings"
 
 	"github.com/grafana/grafana-operator/v5/api/v1beta1"
 	config2 "github.com/grafana/grafana-operator/v5/controllers/config"
@@ -52,6 +52,7 @@ func (r *DeploymentReconciler) Reconcile(ctx context.Context, cr *v1beta1.Grafan
 
 	deployment := model.GetGrafanaDeployment(cr, scheme)
 	_, err := controllerutil.CreateOrUpdate(ctx, r.client, deployment, func() error {
+		model.SetCommonLabels(deployment)
 		deployment.Spec = getDeploymentSpec(cr, deployment.Name, scheme, vars, openshiftPlatform)
 		err := v1beta1.Merge(deployment, cr.Spec.Deployment)
 		return err
@@ -134,14 +135,13 @@ func getVolumeMounts(cr *v1beta1.Grafana, scheme *runtime.Scheme) []v1.VolumeMou
 }
 
 func getGrafanaImage(cr *v1beta1.Grafana) string {
-	if cr.Spec.Version != "" {
-		return fmt.Sprintf("%s:%s", config2.GrafanaImage, cr.Spec.Version)
+	if cr.Spec.Version == "" {
+		return fmt.Sprintf("%s:%s", config2.GrafanaImage, config2.GrafanaVersion)
 	}
-	grafanaImg := os.Getenv("RELATED_IMAGE_GRAFANA")
-	if grafanaImg == "" {
-		grafanaImg = fmt.Sprintf("%s:%s", config2.GrafanaImage, config2.GrafanaVersion)
+	if strings.ContainsAny(cr.Spec.Version, ":/@") {
+		return cr.Spec.Version
 	}
-	return grafanaImg
+	return fmt.Sprintf("%s:%s", config2.GrafanaImage, cr.Spec.Version)
 }
 
 func getContainers(cr *v1beta1.Grafana, scheme *runtime.Scheme, vars *v1beta1.OperatorReconcileVars, openshiftPlatform bool) []v1.Container {
@@ -192,7 +192,7 @@ func getContainers(cr *v1beta1.Grafana, scheme *runtime.Scheme, vars *v1beta1.Op
 		Ports: []v1.ContainerPort{
 			{
 				Name:          "grafana-http",
-				ContainerPort: int32(GetGrafanaPort(cr)),
+				ContainerPort: int32(GetGrafanaPort(cr)), // #nosec G115
 				Protocol:      "TCP",
 			},
 		},

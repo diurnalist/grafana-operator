@@ -25,7 +25,7 @@ jobs:
 
       - id: changed-files
         name: Get changed files
-        uses: tj-actions/changed-files@cc733854b1f224978ef800d29e4709d5ee2883e4 #v44.5.5
+        uses: tj-actions/changed-files@4edd678ac3f81e2dc578756871e4d00c19191daf #v45.0.4
         with:
           files_ignore: |
             **/*.md
@@ -72,10 +72,10 @@ jobs:
       - name: Install ko
         uses: ko-build/setup-ko@v0.7
         with:
-          version: v0.13.0
+          version: v0.16.0
 
       - name: Install chainsaw
-        uses: kyverno/action-install-chainsaw@v0.2.6
+        uses: kyverno/action-install-chainsaw@v0.2.11
 
       - name: Create KinD cluster ${{ matrix.version }}
         id: kind

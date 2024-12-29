@@ -44,6 +44,7 @@ import (
 	grafanav1beta1 "github.com/grafana/grafana-operator/v5/api/v1beta1"
 	"github.com/grafana/grafana-operator/v5/controllers"
 	"github.com/grafana/grafana-operator/v5/controllers/autodetect"
+	"github.com/grafana/grafana-operator/v5/embeds"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -66,7 +67,7 @@ const (
 
 var (
 	scheme   = runtime.NewScheme()
-	setupLog = ctrl.Log.WithName("setup")
+	setupLog = ctrl.Log.WithName("setup").WithValues("version", embeds.Version)
 )
 
 func init() {
@@ -82,11 +83,13 @@ func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
+	var pprofAddr string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
+	flag.StringVar(&pprofAddr, "pprof-addr", ":8888", "The address to expose the pprof server. Empty string disables the pprof server.")
 	opts := zap.Options{
 		Development: true,
 	}
@@ -109,6 +112,7 @@ func main() {
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "f75f3bba.integreatly.org",
+		PprofBindAddress:       pprofAddr,
 	}
 
 	getNamespaceConfig := func(namespaces string) map[string]cache.Config {
@@ -239,6 +243,13 @@ func main() {
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "GrafanaContactPoint")
+		os.Exit(1)
+	}
+	if err = (&controllers.GrafanaNotificationPolicyReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "GrafanaNotificationPolicy")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder

@@ -113,7 +113,8 @@ func (r *GrafanaFolderReconciler) syncFolders(ctx context.Context) (ctrl.Result,
 
 			namespace, name, uid := folder.Split()
 
-			params := folders.NewDeleteFolderParams().WithFolderUID(uid)
+			reftrue := true
+			params := folders.NewDeleteFolderParams().WithFolderUID(uid).WithForceDeleteRules(&reftrue)
 			_, err = grafanaClient.Folders.DeleteFolder(params) //nolint
 			if err != nil {
 				var notFound *folders.DeleteFolderNotFound
@@ -186,7 +187,7 @@ func (r *GrafanaFolderReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 	}()
 
-	if folder.Spec.ParentFolderUID == string(folder.UID) {
+	if folder.Spec.ParentFolderUID == folder.CustomUIDOrUID() {
 		setInvalidSpec(&folder.Status.Conditions, folder.Generation, "CyclicParent", "The value of parentFolderUID must not be the uid of the current folder")
 		meta.RemoveStatusCondition(&folder.Status.Conditions, conditionFolderSynchronized)
 		return ctrl.Result{}, fmt.Errorf("cyclic folder reference")
@@ -292,7 +293,8 @@ func (r *GrafanaFolderReconciler) onFolderDeleted(ctx context.Context, namespace
 			if err != nil {
 				return err
 			}
-			params := folders.NewDeleteFolderParams().WithFolderUID(*uid)
+			reftrue := true
+			params := folders.NewDeleteFolderParams().WithFolderUID(*uid).WithForceDeleteRules(&reftrue)
 			_, err = grafanaClient.Folders.DeleteFolder(params) //nolint
 			if err != nil {
 				var notFound *folders.DeleteFolderNotFound
@@ -314,7 +316,7 @@ func (r *GrafanaFolderReconciler) onFolderDeleted(ctx context.Context, namespace
 
 func (r *GrafanaFolderReconciler) onFolderCreated(ctx context.Context, grafana *grafanav1beta1.Grafana, cr *grafanav1beta1.GrafanaFolder) error {
 	title := cr.GetTitle()
-	uid := string(cr.UID)
+	uid := cr.CustomUIDOrUID()
 
 	grafanaClient, err := client2.NewGeneratedGrafanaClient(ctx, r.Client, grafana)
 	if err != nil {
@@ -413,7 +415,7 @@ func (r *GrafanaFolderReconciler) UpdateStatus(ctx context.Context, cr *grafanav
 // Check if the folder exists. Matches UID first and fall back to title. Title matching only works for non-nested folders
 func (r *GrafanaFolderReconciler) Exists(client *genapi.GrafanaHTTPAPI, cr *grafanav1beta1.GrafanaFolder) (bool, string, string, error) {
 	title := cr.GetTitle()
-	uid := string(cr.UID)
+	uid := cr.CustomUIDOrUID()
 
 	uidResp, err := client.Folders.GetFolderByUID(uid)
 	if err == nil {
@@ -429,12 +431,14 @@ func (r *GrafanaFolderReconciler) Exists(client *genapi.GrafanaHTTPAPI, cr *graf
 		if err != nil {
 			return false, "", "", err
 		}
-		for _, folder := range foldersResp.Payload {
-			if strings.EqualFold(folder.Title, title) {
-				return true, folder.UID, folder.ParentUID, nil
+		folders := foldersResp.GetPayload()
+
+		for _, remoteFolder := range folders {
+			if strings.EqualFold(remoteFolder.Title, title) {
+				return true, remoteFolder.UID, remoteFolder.ParentUID, nil
 			}
 		}
-		if len(foldersResp.Payload) < int(limit) {
+		if len(folders) < int(limit) {
 			return false, "", "", nil
 		}
 		page++

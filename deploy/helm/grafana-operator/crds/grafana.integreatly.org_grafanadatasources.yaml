@@ -3,11 +3,13 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: grafanadatasources.grafana.integreatly.org
 spec:
   group: grafana.integreatly.org
   names:
+    categories:
+    - grafana-operator
     kind: GrafanaDatasource
     listKind: GrafanaDatasourceList
     plural: grafanadatasources
@@ -65,7 +67,8 @@ spec:
                   database:
                     type: string
                   editable:
-                    description: Deprecated field, it has no effect
+                    description: Whether to enable/disable editing of the datasource
+                      in Grafana UI
                     type: boolean
                   isDefault:
                     type: boolean
@@ -84,6 +87,7 @@ spec:
                   type:
                     type: string
                   uid:
+                    description: Deprecated field, use spec.uid instead
                     type: string
                   url:
                     type: string
@@ -159,6 +163,13 @@ spec:
                 format: duration
                 pattern: ^([0-9]+(\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$
                 type: string
+              uid:
+                description: The UID, for the datasource, fallback to the deprecated
+                  spec.datasource.uid and metadata.uid
+                type: string
+                x-kubernetes-validations:
+                - message: spec.uid is immutable
+                  rule: self == oldSelf
               valuesFrom:
                 description: environments variables from secrets or config maps
                 items:
@@ -180,9 +191,7 @@ spec:
                                 This field is effectively required, but due to backwards compatibility is
                                 allowed to be empty. Instances of this type with an empty value here are
                                 almost certainly wrong.
-                                TODO: Add other useful fields. apiVersion, kind, uid?
                                 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                               type: string
                             optional:
                               description: Specify whether the ConfigMap or its key
@@ -206,9 +215,7 @@ spec:
                                 This field is effectively required, but due to backwards compatibility is
                                 allowed to be empty. Instances of this type with an empty value here are
                                 almost certainly wrong.
-                                TODO: Add other useful fields. apiVersion, kind, uid?
                                 More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                                TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.
                               type: string
                             optional:
                               description: Specify whether the Secret or its key must
@@ -219,15 +226,24 @@ spec:
                           type: object
                           x-kubernetes-map-type: atomic
                       type: object
+                      x-kubernetes-validations:
+                      - message: Either configMapKeyRef or secretKeyRef must be set
+                        rule: (has(self.configMapKeyRef) && !has(self.secretKeyRef))
+                          || (!has(self.configMapKeyRef) && has(self.secretKeyRef))
                   required:
                   - targetPath
                   - valueFrom
                   type: object
+                maxItems: 99
                 type: array
             required:
             - datasource
             - instanceSelector
             type: object
+            x-kubernetes-validations:
+            - message: spec.uid is immutable
+              rule: ((!has(oldSelf.uid) && !has(self.uid)) || (has(oldSelf.uid) &&
+                has(self.uid)))
           status:
             description: GrafanaDatasourceStatus defines the observed state of GrafanaDatasource
             properties:

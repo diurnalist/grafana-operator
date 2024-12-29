@@ -21,6 +21,8 @@ Resource Types:
 
 - [GrafanaFolder](#grafanafolder)
 
+- [GrafanaNotificationPolicy](#grafananotificationpolicy)
+
 - [Grafana](#grafana)
 
 
@@ -68,7 +70,7 @@ GrafanaAlertRuleGroup is the Schema for the grafanaalertrulegroups API
         <td>
           GrafanaAlertRuleGroupSpec defines the desired state of GrafanaAlertRuleGroup<br/>
           <br/>
-            <i>Validations</i>:<li>(has(self.folderUID) && !(has(self.folderRef))) || (has(self.folderRef) && !(has(self.folderUID))): Only one of FolderUID or FolderRef can be set</li>
+            <i>Validations</i>:<li>(has(self.folderUID) && !(has(self.folderRef))) || (has(self.folderRef) && !(has(self.folderUID))): Only one of FolderUID or FolderRef can be set</li><li>((!has(oldSelf.editable) && !has(self.editable)) || (has(oldSelf.editable) && has(self.editable))): spec.editable is immutable</li>
         </td>
         <td>false</td>
       </tr><tr>
@@ -131,6 +133,15 @@ GrafanaAlertRuleGroupSpec defines the desired state of GrafanaAlertRuleGroup
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>editable</b></td>
+        <td>boolean</td>
+        <td>
+          Whether to enable or disable editing of the alert rule group in Grafana UI<br/>
+          <br/>
+            <i>Validations</i>:<li>self == oldSelf: Value is immutable</li>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>folderRef</b></td>
         <td>string</td>
         <td>
@@ -143,6 +154,13 @@ GrafanaAlertRuleGroupSpec defines the desired state of GrafanaAlertRuleGroup
         <td>
           UID of the folder containing this rule group
 Overrides the FolderSelector<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the alert rule group. If not specified, the resource name will be used.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -533,22 +551,6 @@ GrafanaAlertRuleGroupStatus defines the observed state of GrafanaAlertRuleGroup
 
 
 Condition contains details for one aspect of the current state of this API Resource.
----
-This struct is intended for direct use as an array at the field path .status.conditions.  For example,
-
-
-	type FooStatus struct{
-	    // Represents the observations of a foo's current state.
-	    // Known .status.conditions.type are: "Available", "Progressing", and "Degraded"
-	    // +patchMergeKey=type
-	    // +patchStrategy=merge
-	    // +listType=map
-	    // +listMapKey=type
-	    Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
-
-
-	    // other fields
-	}
 
 <table>
     <thead>
@@ -601,11 +603,7 @@ This field may not be empty.<br/>
         <td><b>type</b></td>
         <td>string</td>
         <td>
-          type of condition in CamelCase or in foo.example.com/CamelCase.
----
-Many .condition.type values are consistent across resources like Available, but because arbitrary conditions can be
-useful (see .node.status.conditions), the ability to deconflict is important.
-The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)<br/>
+          type of condition in CamelCase or in foo.example.com/CamelCase.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -664,6 +662,8 @@ GrafanaContactPoint is the Schema for the grafanacontactpoints API
         <td>object</td>
         <td>
           GrafanaContactPointSpec defines the desired state of GrafanaContactPoint<br/>
+          <br/>
+            <i>Validations</i>:<li>((!has(oldSelf.uid) && !has(self.uid)) || (has(oldSelf.uid) && has(self.uid))): spec.uid is immutable</li>
         </td>
         <td>false</td>
       </tr><tr>
@@ -747,6 +747,22 @@ GrafanaContactPointSpec defines the desired state of GrafanaContactPoint
           <br/>
           <br/>
             <i>Enum</i>: alertmanager, prometheus-alertmanager, dingding, discord, email, googlechat, kafka, line, opsgenie, pagerduty, pushover, sensugo, sensu, slack, teams, telegram, threema, victorops, webhook, wecom, hipchat, oncall<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>uid</b></td>
+        <td>string</td>
+        <td>
+          Manually specify the UID the Contact Point is created with<br/>
+          <br/>
+            <i>Validations</i>:<li>self == oldSelf: spec.uid is immutable</li>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#grafanacontactpointspecvaluesfromindex">valuesFrom</a></b></td>
+        <td>[]object</td>
+        <td>
+          <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -835,6 +851,170 @@ merge patch.<br/>
 </table>
 
 
+### GrafanaContactPoint.spec.valuesFrom[index]
+<sup><sup>[↩ Parent](#grafanacontactpointspec)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>targetPath</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#grafanacontactpointspecvaluesfromindexvaluefrom">valueFrom</a></b></td>
+        <td>object</td>
+        <td>
+          <br/>
+          <br/>
+            <i>Validations</i>:<li>(has(self.configMapKeyRef) && !has(self.secretKeyRef)) || (!has(self.configMapKeyRef) && has(self.secretKeyRef)): Either configMapKeyRef or secretKeyRef must be set</li>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### GrafanaContactPoint.spec.valuesFrom[index].valueFrom
+<sup><sup>[↩ Parent](#grafanacontactpointspecvaluesfromindex)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#grafanacontactpointspecvaluesfromindexvaluefromconfigmapkeyref">configMapKeyRef</a></b></td>
+        <td>object</td>
+        <td>
+          Selects a key of a ConfigMap.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#grafanacontactpointspecvaluesfromindexvaluefromsecretkeyref">secretKeyRef</a></b></td>
+        <td>object</td>
+        <td>
+          Selects a key of a Secret.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### GrafanaContactPoint.spec.valuesFrom[index].valueFrom.configMapKeyRef
+<sup><sup>[↩ Parent](#grafanacontactpointspecvaluesfromindexvaluefrom)</sup></sup>
+
+
+
+Selects a key of a ConfigMap.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          The key to select.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
+          <br/>
+            <i>Default</i>: <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>
+          Specify whether the ConfigMap or its key must be defined<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### GrafanaContactPoint.spec.valuesFrom[index].valueFrom.secretKeyRef
+<sup><sup>[↩ Parent](#grafanacontactpointspecvaluesfromindexvaluefrom)</sup></sup>
+
+
+
+Selects a key of a Secret.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          The key of the secret to select from.  Must be a valid secret key.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
+          <br/>
+            <i>Default</i>: <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>
+          Specify whether the Secret or its key must be defined<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 ### GrafanaContactPoint.status
 <sup><sup>[↩ Parent](#grafanacontactpoint)</sup></sup>
 
@@ -869,22 +1049,6 @@ Important: Run "make" to regenerate code after modifying this file<br/>
 
 
 Condition contains details for one aspect of the current state of this API Resource.
----
-This struct is intended for direct use as an array at the field path .status.conditions.  For example,
-
-
-	type FooStatus struct{
-	    // Represents the observations of a foo's current state.
-	    // Known .status.conditions.type are: "Available", "Progressing", and "Degraded"
-	    // +patchMergeKey=type
-	    // +patchStrategy=merge
-	    // +listType=map
-	    // +listMapKey=type
-	    Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
-
-
-	    // other fields
-	}
 
 <table>
     <thead>
@@ -937,11 +1101,7 @@ This field may not be empty.<br/>
         <td><b>type</b></td>
         <td>string</td>
         <td>
-          type of condition in CamelCase or in foo.example.com/CamelCase.
----
-Many .condition.type values are consistent across resources like Available, but because arbitrary conditions can be
-useful (see .node.status.conditions), the ability to deconflict is important.
-The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)<br/>
+          type of condition in CamelCase or in foo.example.com/CamelCase.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -1000,6 +1160,8 @@ GrafanaDashboard is the Schema for the grafanadashboards API
         <td>object</td>
         <td>
           GrafanaDashboardSpec defines the desired state of GrafanaDashboard<br/>
+          <br/>
+            <i>Validations</i>:<li>(has(self.folderUID) && !(has(self.folderRef))) || (has(self.folderRef) && !(has(self.folderUID))) || !(has(self.folderRef) && (has(self.folderUID))): Only one of folderUID or folderRef can be declared at the same time</li><li>(has(self.folder) && !(has(self.folderRef) || has(self.folderUID))) || !(has(self.folder)): folder field cannot be set when folderUID or folderRef is already declared</li><li>((!has(oldSelf.uid) && !has(self.uid)) || (has(oldSelf.uid) && has(self.uid))): spec.uid is immutable</li>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1088,6 +1250,20 @@ GrafanaDashboardSpec defines the desired state of GrafanaDashboard
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>folderRef</b></td>
+        <td>string</td>
+        <td>
+          Name of a `GrafanaFolder` resource in the same namespace<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>folderUID</b></td>
+        <td>string</td>
+        <td>
+          UID of the target folder for this dashboard<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#grafanadashboardspecgrafanacom">grafanaCom</a></b></td>
         <td>object</td>
         <td>
@@ -1142,10 +1318,26 @@ GrafanaDashboardSpec defines the desired state of GrafanaDashboard
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>uid</b></td>
+        <td>string</td>
+        <td>
+          Manually specify the uid for the dashboard, overwrites uids already present in the json model<br/>
+          <br/>
+            <i>Validations</i>:<li>self == oldSelf: spec.uid is immutable</li>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>url</b></td>
         <td>string</td>
         <td>
           dashboard url<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#grafanadashboardspecurlauthorization">urlAuthorization</a></b></td>
+        <td>object</td>
+        <td>
+          authorization options for dashboard from url<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -1265,9 +1457,7 @@ dashboard from configmap
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -1382,9 +1572,7 @@ Selects a key of a ConfigMap.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -1431,9 +1619,7 @@ Selects a key of a Secret.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -1476,7 +1662,7 @@ TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://git
         <td><b>value</b></td>
         <td>string</td>
         <td>
-          Inline evn value<br/>
+          Inline env value<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1555,9 +1741,7 @@ Selects a key of a ConfigMap.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -1604,9 +1788,7 @@ Selects a key of a Secret.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -1733,6 +1915,161 @@ Jsonnet project build
 </table>
 
 
+### GrafanaDashboard.spec.urlAuthorization
+<sup><sup>[↩ Parent](#grafanadashboardspec)</sup></sup>
+
+
+
+authorization options for dashboard from url
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#grafanadashboardspecurlauthorizationbasicauth">basicAuth</a></b></td>
+        <td>object</td>
+        <td>
+          <br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### GrafanaDashboard.spec.urlAuthorization.basicAuth
+<sup><sup>[↩ Parent](#grafanadashboardspecurlauthorization)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#grafanadashboardspecurlauthorizationbasicauthpassword">password</a></b></td>
+        <td>object</td>
+        <td>
+          SecretKeySelector selects a key of a Secret.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#grafanadashboardspecurlauthorizationbasicauthusername">username</a></b></td>
+        <td>object</td>
+        <td>
+          SecretKeySelector selects a key of a Secret.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### GrafanaDashboard.spec.urlAuthorization.basicAuth.password
+<sup><sup>[↩ Parent](#grafanadashboardspecurlauthorizationbasicauth)</sup></sup>
+
+
+
+SecretKeySelector selects a key of a Secret.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          The key of the secret to select from.  Must be a valid secret key.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
+          <br/>
+            <i>Default</i>: <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>
+          Specify whether the Secret or its key must be defined<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### GrafanaDashboard.spec.urlAuthorization.basicAuth.username
+<sup><sup>[↩ Parent](#grafanadashboardspecurlauthorizationbasicauth)</sup></sup>
+
+
+
+SecretKeySelector selects a key of a Secret.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          The key of the secret to select from.  Must be a valid secret key.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the referent.
+This field is effectively required, but due to backwards compatibility is
+allowed to be empty. Instances of this type with an empty value here are
+almost certainly wrong.
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
+          <br/>
+            <i>Default</i>: <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>
+          Specify whether the Secret or its key must be defined<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 ### GrafanaDashboard.status
 <sup><sup>[↩ Parent](#grafanadashboard)</sup></sup>
 
@@ -1754,6 +2091,13 @@ GrafanaDashboardStatus defines the observed state of GrafanaDashboard
         <td>boolean</td>
         <td>
           The dashboard instanceSelector can't find matching grafana instances<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#grafanadashboardstatusconditionsindex">conditions</a></b></td>
+        <td>[]object</td>
+        <td>
+          <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1807,6 +2151,83 @@ GrafanaDashboardStatus defines the observed state of GrafanaDashboard
       </tr></tbody>
 </table>
 
+
+### GrafanaDashboard.status.conditions[index]
+<sup><sup>[↩ Parent](#grafanadashboardstatus)</sup></sup>
+
+
+
+Condition contains details for one aspect of the current state of this API Resource.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>lastTransitionTime</b></td>
+        <td>string</td>
+        <td>
+          lastTransitionTime is the last time the condition transitioned from one status to another.
+This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.<br/>
+          <br/>
+            <i>Format</i>: date-time<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>message</b></td>
+        <td>string</td>
+        <td>
+          message is a human readable message indicating details about the transition.
+This may be an empty string.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>reason</b></td>
+        <td>string</td>
+        <td>
+          reason contains a programmatic identifier indicating the reason for the condition's last transition.
+Producers of specific condition types may define expected values and meanings for this field,
+and whether the values are considered a guaranteed API.
+The value should be a CamelCase string.
+This field may not be empty.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>status</b></td>
+        <td>enum</td>
+        <td>
+          status of the condition, one of True, False, Unknown.<br/>
+          <br/>
+            <i>Enum</i>: True, False, Unknown<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>
+          type of condition in CamelCase or in foo.example.com/CamelCase.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>observedGeneration</b></td>
+        <td>integer</td>
+        <td>
+          observedGeneration represents the .metadata.generation that the condition was set based upon.
+For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+with respect to the current state of the instance.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+            <i>Minimum</i>: 0<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
 ## GrafanaDatasource
 <sup><sup>[↩ Parent](#grafanaintegreatlyorgv1beta1 )</sup></sup>
 
@@ -1848,6 +2269,8 @@ GrafanaDatasource is the Schema for the grafanadatasources API
         <td>object</td>
         <td>
           GrafanaDatasourceSpec defines the desired state of GrafanaDatasource<br/>
+          <br/>
+            <i>Validations</i>:<li>((!has(oldSelf.uid) && !has(self.uid)) || (has(oldSelf.uid) && has(self.uid))): spec.uid is immutable</li>
         </td>
         <td>false</td>
       </tr><tr>
@@ -1918,6 +2341,15 @@ GrafanaDatasourceSpec defines the desired state of GrafanaDatasource
         </td>
         <td>false</td>
       </tr><tr>
+        <td><b>uid</b></td>
+        <td>string</td>
+        <td>
+          The UID, for the datasource, fallback to the deprecated spec.datasource.uid and metadata.uid<br/>
+          <br/>
+            <i>Validations</i>:<li>self == oldSelf: spec.uid is immutable</li>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#grafanadatasourcespecvaluesfromindex">valuesFrom</a></b></td>
         <td>[]object</td>
         <td>
@@ -1976,7 +2408,7 @@ GrafanaDatasourceSpec defines the desired state of GrafanaDatasource
         <td><b>editable</b></td>
         <td>boolean</td>
         <td>
-          Deprecated field, it has no effect<br/>
+          Whether to enable/disable editing of the datasource in Grafana UI<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2027,7 +2459,7 @@ GrafanaDatasourceSpec defines the desired state of GrafanaDatasource
         <td><b>uid</b></td>
         <td>string</td>
         <td>
-          <br/>
+          Deprecated field, use spec.uid instead<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2192,6 +2624,8 @@ merge patch.<br/>
         <td>object</td>
         <td>
           <br/>
+          <br/>
+            <i>Validations</i>:<li>(has(self.configMapKeyRef) && !has(self.secretKeyRef)) || (!has(self.configMapKeyRef) && has(self.secretKeyRef)): Either configMapKeyRef or secretKeyRef must be set</li>
         </td>
         <td>true</td>
       </tr></tbody>
@@ -2263,9 +2697,7 @@ Selects a key of a ConfigMap.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -2312,9 +2744,7 @@ Selects a key of a Secret.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -2428,7 +2858,7 @@ GrafanaFolder is the Schema for the grafanafolders API
         <td>
           GrafanaFolderSpec defines the desired state of GrafanaFolder<br/>
           <br/>
-            <i>Validations</i>:<li>(has(self.parentFolderUID) && !(has(self.parentFolderRef))) || (has(self.parentFolderRef) && !(has(self.parentFolderUID))) || !(has(self.parentFolderRef) && (has(self.parentFolderUID))): Only one of parentFolderUID or parentFolderRef can be set</li>
+            <i>Validations</i>:<li>(has(self.parentFolderUID) && !(has(self.parentFolderRef))) || (has(self.parentFolderRef) && !(has(self.parentFolderUID))) || !(has(self.parentFolderRef) && (has(self.parentFolderUID))): Only one of parentFolderUID or parentFolderRef can be set</li><li>((!has(oldSelf.uid) && !has(self.uid)) || (has(oldSelf.uid) && has(self.uid))): spec.uid is immutable</li>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2462,7 +2892,7 @@ GrafanaFolderSpec defines the desired state of GrafanaFolder
         <td><b><a href="#grafanafolderspecinstanceselector">instanceSelector</a></b></td>
         <td>object</td>
         <td>
-          selects Grafanas for import<br/>
+          Selects Grafanas for import<br/>
           <br/>
             <i>Validations</i>:<li>self == oldSelf: Value is immutable</li>
         </td>
@@ -2471,7 +2901,7 @@ GrafanaFolderSpec defines the desired state of GrafanaFolder
         <td><b>allowCrossNamespaceImport</b></td>
         <td>boolean</td>
         <td>
-          allow to import this resources from an operator in a different namespace<br/>
+          Enable matching Grafana instances outside the current namespace<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2492,14 +2922,14 @@ GrafanaFolderSpec defines the desired state of GrafanaFolder
         <td><b>permissions</b></td>
         <td>string</td>
         <td>
-          raw json with folder permissions<br/>
+          Raw json with folder permissions, potentially exported from Grafana<br/>
         </td>
         <td>false</td>
       </tr><tr>
         <td><b>resyncPeriod</b></td>
         <td>string</td>
         <td>
-          how often the folder is synced, defaults to 5m if not set<br/>
+          How often the folder is synced, defaults to 5m if not set<br/>
           <br/>
             <i>Format</i>: duration<br/>
             <i>Default</i>: 5m<br/>
@@ -2509,7 +2939,16 @@ GrafanaFolderSpec defines the desired state of GrafanaFolder
         <td><b>title</b></td>
         <td>string</td>
         <td>
+          Display name of the folder in Grafana<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>uid</b></td>
+        <td>string</td>
+        <td>
+          Manually specify the UID the Folder is created with<br/>
           <br/>
+            <i>Validations</i>:<li>self == oldSelf: spec.uid is immutable</li>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -2521,7 +2960,7 @@ GrafanaFolderSpec defines the desired state of GrafanaFolder
 
 
 
-selects Grafanas for import
+Selects Grafanas for import
 
 <table>
     <thead>
@@ -2615,17 +3054,17 @@ GrafanaFolderStatus defines the observed state of GrafanaFolder
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#grafanafolderstatusconditionsindex">conditions</a></b></td>
-        <td>[]object</td>
-        <td>
-          <br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
         <td><b>NoMatchingInstances</b></td>
         <td>boolean</td>
         <td>
           The folder instanceSelector can't find matching grafana instances<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#grafanafolderstatusconditionsindex">conditions</a></b></td>
+        <td>[]object</td>
+        <td>
+          <br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -2655,22 +3094,6 @@ Important: Run "make" to regenerate code after modifying this file<br/>
 
 
 Condition contains details for one aspect of the current state of this API Resource.
----
-This struct is intended for direct use as an array at the field path .status.conditions.  For example,
-
-
-	type FooStatus struct{
-	    // Represents the observations of a foo's current state.
-	    // Known .status.conditions.type are: "Available", "Progressing", and "Degraded"
-	    // +patchMergeKey=type
-	    // +patchStrategy=merge
-	    // +listType=map
-	    // +listMapKey=type
-	    Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
-
-
-	    // other fields
-	}
 
 <table>
     <thead>
@@ -2723,11 +3146,455 @@ This field may not be empty.<br/>
         <td><b>type</b></td>
         <td>string</td>
         <td>
-          type of condition in CamelCase or in foo.example.com/CamelCase.
----
-Many .condition.type values are consistent across resources like Available, but because arbitrary conditions can be
-useful (see .node.status.conditions), the ability to deconflict is important.
-The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)<br/>
+          type of condition in CamelCase or in foo.example.com/CamelCase.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>observedGeneration</b></td>
+        <td>integer</td>
+        <td>
+          observedGeneration represents the .metadata.generation that the condition was set based upon.
+For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+with respect to the current state of the instance.<br/>
+          <br/>
+            <i>Format</i>: int64<br/>
+            <i>Minimum</i>: 0<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+## GrafanaNotificationPolicy
+<sup><sup>[↩ Parent](#grafanaintegreatlyorgv1beta1 )</sup></sup>
+
+
+
+
+
+
+GrafanaNotificationPolicy is the Schema for the GrafanaNotificationPolicy API
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+      <td><b>apiVersion</b></td>
+      <td>string</td>
+      <td>grafana.integreatly.org/v1beta1</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b>kind</b></td>
+      <td>string</td>
+      <td>GrafanaNotificationPolicy</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.27/#objectmeta-v1-meta">metadata</a></b></td>
+      <td>object</td>
+      <td>Refer to the Kubernetes API documentation for the fields of the `metadata` field.</td>
+      <td>true</td>
+      </tr><tr>
+        <td><b><a href="#grafananotificationpolicyspec">spec</a></b></td>
+        <td>object</td>
+        <td>
+          GrafanaNotificationPolicySpec defines the desired state of GrafanaNotificationPolicy<br/>
+          <br/>
+            <i>Validations</i>:<li>((!has(oldSelf.editable) && !has(self.editable)) || (has(oldSelf.editable) && has(self.editable))): spec.editable is immutable</li>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#grafananotificationpolicystatus">status</a></b></td>
+        <td>object</td>
+        <td>
+          GrafanaNotificationPolicyStatus defines the observed state of GrafanaNotificationPolicy<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### GrafanaNotificationPolicy.spec
+<sup><sup>[↩ Parent](#grafananotificationpolicy)</sup></sup>
+
+
+
+GrafanaNotificationPolicySpec defines the desired state of GrafanaNotificationPolicy
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#grafananotificationpolicyspecinstanceselector">instanceSelector</a></b></td>
+        <td>object</td>
+        <td>
+          selects Grafanas for import<br/>
+          <br/>
+            <i>Validations</i>:<li>self == oldSelf: Value is immutable</li>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#grafananotificationpolicyspecroute">route</a></b></td>
+        <td>object</td>
+        <td>
+          Routes for alerts to match against<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>editable</b></td>
+        <td>boolean</td>
+        <td>
+          Whether to enable or disable editing of the notification policy in Grafana UI<br/>
+          <br/>
+            <i>Validations</i>:<li>self == oldSelf: Value is immutable</li>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>resyncPeriod</b></td>
+        <td>string</td>
+        <td>
+          <br/>
+          <br/>
+            <i>Format</i>: duration<br/>
+            <i>Default</i>: 10m<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### GrafanaNotificationPolicy.spec.instanceSelector
+<sup><sup>[↩ Parent](#grafananotificationpolicyspec)</sup></sup>
+
+
+
+selects Grafanas for import
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#grafananotificationpolicyspecinstanceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>
+          matchExpressions is a list of label selector requirements. The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>
+          matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+map is equivalent to an element of matchExpressions, whose key field is "key", the
+operator is "In", and the values array contains only "value". The requirements are ANDed.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### GrafanaNotificationPolicy.spec.instanceSelector.matchExpressions[index]
+<sup><sup>[↩ Parent](#grafananotificationpolicyspecinstanceselector)</sup></sup>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that
+relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>
+          key is the label key that the selector applies to.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>
+          operator represents a key's relationship to a set of values.
+Valid operators are In, NotIn, Exists and DoesNotExist.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>
+          values is an array of string values. If the operator is In or NotIn,
+the values array must be non-empty. If the operator is Exists or DoesNotExist,
+the values array must be empty. This array is replaced during a strategic
+merge patch.<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### GrafanaNotificationPolicy.spec.route
+<sup><sup>[↩ Parent](#grafananotificationpolicyspec)</sup></sup>
+
+
+
+Routes for alerts to match against
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>continue</b></td>
+        <td>boolean</td>
+        <td>
+          continue<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>group_by</b></td>
+        <td>[]string</td>
+        <td>
+          group by<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>group_interval</b></td>
+        <td>string</td>
+        <td>
+          group interval<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>group_wait</b></td>
+        <td>string</td>
+        <td>
+          group wait<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>match_re</b></td>
+        <td>map[string]string</td>
+        <td>
+          match re<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#grafananotificationpolicyspecroutematchersindex">matchers</a></b></td>
+        <td>[]object</td>
+        <td>
+          matchers<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>mute_time_intervals</b></td>
+        <td>[]string</td>
+        <td>
+          mute time intervals<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>object_matchers</b></td>
+        <td>[][]string</td>
+        <td>
+          object matchers<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>provenance</b></td>
+        <td>string</td>
+        <td>
+          provenance<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>receiver</b></td>
+        <td>string</td>
+        <td>
+          receiver<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>repeat_interval</b></td>
+        <td>string</td>
+        <td>
+          repeat interval<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>routes</b></td>
+        <td>JSON</td>
+        <td>
+          routes<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### GrafanaNotificationPolicy.spec.route.matchers[index]
+<sup><sup>[↩ Parent](#grafananotificationpolicyspecroute)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>isRegex</b></td>
+        <td>boolean</td>
+        <td>
+          is regex<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>value</b></td>
+        <td>string</td>
+        <td>
+          value<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>isEqual</b></td>
+        <td>boolean</td>
+        <td>
+          is equal<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          name<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### GrafanaNotificationPolicy.status
+<sup><sup>[↩ Parent](#grafananotificationpolicy)</sup></sup>
+
+
+
+GrafanaNotificationPolicyStatus defines the observed state of GrafanaNotificationPolicy
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#grafananotificationpolicystatusconditionsindex">conditions</a></b></td>
+        <td>[]object</td>
+        <td>
+          <br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### GrafanaNotificationPolicy.status.conditions[index]
+<sup><sup>[↩ Parent](#grafananotificationpolicystatus)</sup></sup>
+
+
+
+Condition contains details for one aspect of the current state of this API Resource.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>lastTransitionTime</b></td>
+        <td>string</td>
+        <td>
+          lastTransitionTime is the last time the condition transitioned from one status to another.
+This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.<br/>
+          <br/>
+            <i>Format</i>: date-time<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>message</b></td>
+        <td>string</td>
+        <td>
+          message is a human readable message indicating details about the transition.
+This may be an empty string.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>reason</b></td>
+        <td>string</td>
+        <td>
+          reason contains a programmatic identifier indicating the reason for the condition's last transition.
+Producers of specific condition types may define expected values and meanings for this field,
+and whether the values are considered a guaranteed API.
+The value should be a CamelCase string.
+This field may not be empty.<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>status</b></td>
+        <td>enum</td>
+        <td>
+          status of the condition, one of True, False, Unknown.<br/>
+          <br/>
+            <i>Enum</i>: True, False, Unknown<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>
+          type of condition in CamelCase or in foo.example.com/CamelCase.<br/>
         </td>
         <td>true</td>
       </tr><tr>
@@ -2920,6 +3787,13 @@ Client defines how the grafana-operator talks to the grafana instance.
         </tr>
     </thead>
     <tbody><tr>
+        <td><b>headers</b></td>
+        <td>map[string]string</td>
+        <td>
+          Custom HTTP headers to use when interacting with this Grafana.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
         <td><b>preferIngress</b></td>
         <td>boolean</td>
         <td>
@@ -2931,6 +3805,83 @@ Client defines how the grafana-operator talks to the grafana instance.
         <td>integer</td>
         <td>
           <br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#grafanaspecclienttls">tls</a></b></td>
+        <td>object</td>
+        <td>
+          TLS Configuration used to talk with the grafana instance.<br/>
+          <br/>
+            <i>Validations</i>:<li>(has(self.insecureSkipVerify) && !(has(self.certSecretRef))) || (has(self.certSecretRef) && !(has(self.insecureSkipVerify))): insecureSkipVerify and certSecretRef cannot be set at the same time</li>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### Grafana.spec.client.tls
+<sup><sup>[↩ Parent](#grafanaspecclient)</sup></sup>
+
+
+
+TLS Configuration used to talk with the grafana instance.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#grafanaspecclienttlscertsecretref">certSecretRef</a></b></td>
+        <td>object</td>
+        <td>
+          Use a secret as a reference to give TLS Certificate information<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>insecureSkipVerify</b></td>
+        <td>boolean</td>
+        <td>
+          Disable the CA check of the server<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### Grafana.spec.client.tls.certSecretRef
+<sup><sup>[↩ Parent](#grafanaspecclienttls)</sup></sup>
+
+
+
+Use a secret as a reference to give TLS Certificate information
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          name is unique within a namespace to reference a secret resource.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>namespace</b></td>
+        <td>string</td>
+        <td>
+          namespace defines the space within which the secret name must be unique.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -3196,10 +4147,7 @@ DeploymentStrategy describes how to replace existing pods with new ones.
         <td>object</td>
         <td>
           Rolling update config params. Present only if DeploymentStrategyType =
-RollingUpdate.
----
-TODO: Update this to follow our convention for oneOf, whatever we decide it
-to be.<br/>
+RollingUpdate.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -3220,9 +4168,6 @@ to be.<br/>
 
 Rolling update config params. Present only if DeploymentStrategyType =
 RollingUpdate.
----
-TODO: Update this to follow our convention for oneOf, whatever we decide it
-to be.
 
 <table>
     <thead>
@@ -3517,10 +4462,8 @@ More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/<br
           Specifies the OS of the containers in the pod.
 Some pod and container fields are restricted if this is set.
 
-
 If the OS field is set to linux, the following fields must be unset:
 -securityContext.windowsOptions
-
 
 If the OS field is set to windows, following fields must be unset:
 - spec.hostPID
@@ -4267,7 +5210,7 @@ for the incoming pod's pod (anti) affinity. Keys that don't exist in the incomin
 pod labels will be ignored. The default value is empty.
 The same key is forbidden to exist in both matchLabelKeys and labelSelector.
 Also, matchLabelKeys cannot be set when labelSelector isn't set.
-This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.<br/>
+This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -4282,7 +5225,7 @@ for the incoming pod's pod (anti) affinity. Keys that don't exist in the incomin
 pod labels will be ignored. The default value is empty.
 The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
 Also, mismatchLabelKeys cannot be set when labelSelector isn't set.
-This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.<br/>
+This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -4531,7 +5474,7 @@ for the incoming pod's pod (anti) affinity. Keys that don't exist in the incomin
 pod labels will be ignored. The default value is empty.
 The same key is forbidden to exist in both matchLabelKeys and labelSelector.
 Also, matchLabelKeys cannot be set when labelSelector isn't set.
-This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.<br/>
+This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -4546,7 +5489,7 @@ for the incoming pod's pod (anti) affinity. Keys that don't exist in the incomin
 pod labels will be ignored. The default value is empty.
 The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
 Also, mismatchLabelKeys cannot be set when labelSelector isn't set.
-This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.<br/>
+This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -4875,7 +5818,7 @@ for the incoming pod's pod (anti) affinity. Keys that don't exist in the incomin
 pod labels will be ignored. The default value is empty.
 The same key is forbidden to exist in both matchLabelKeys and labelSelector.
 Also, matchLabelKeys cannot be set when labelSelector isn't set.
-This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.<br/>
+This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -4890,7 +5833,7 @@ for the incoming pod's pod (anti) affinity. Keys that don't exist in the incomin
 pod labels will be ignored. The default value is empty.
 The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
 Also, mismatchLabelKeys cannot be set when labelSelector isn't set.
-This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.<br/>
+This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -5139,7 +6082,7 @@ for the incoming pod's pod (anti) affinity. Keys that don't exist in the incomin
 pod labels will be ignored. The default value is empty.
 The same key is forbidden to exist in both matchLabelKeys and labelSelector.
 Also, matchLabelKeys cannot be set when labelSelector isn't set.
-This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.<br/>
+This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -5154,7 +6097,7 @@ for the incoming pod's pod (anti) affinity. Keys that don't exist in the incomin
 pod labels will be ignored. The default value is empty.
 The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
 Also, mismatchLabelKeys cannot be set when labelSelector isn't set.
-This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.<br/>
+This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -5760,9 +6703,7 @@ Selects a key of a ConfigMap.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -5886,9 +6827,7 @@ Selects a key of a secret in the pod's namespace
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -5969,9 +6908,7 @@ The ConfigMap to select from
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -6011,9 +6948,7 @@ The Secret to select from
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -6753,8 +7688,9 @@ GRPC specifies an action involving a GRPC port.
           Service is the name of the service to place in the gRPC HealthCheckRequest
 (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
 
-
 If this is not specified, the default behavior is defined by gRPC.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -7142,8 +8078,9 @@ GRPC specifies an action involving a GRPC port.
           Service is the name of the service to place in the gRPC HealthCheckRequest
 (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
 
-
 If this is not specified, the default behavior is defined by gRPC.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -7341,10 +8278,8 @@ More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-co
           Claims lists the names of resources, defined in spec.resourceClaims,
 that are used by this container.
 
-
 This is an alpha field and requires enabling the
 DynamicResourceAllocation feature gate.
-
 
 This field is immutable. It can only be set for containers.<br/>
         </td>
@@ -7396,6 +8331,15 @@ the Pod where this field is used. It makes that resource available
 inside a container.<br/>
         </td>
         <td>true</td>
+      </tr><tr>
+        <td><b>request</b></td>
+        <td>string</td>
+        <td>
+          Request is the name chosen for a request in the referenced claim.
+If empty, everything from the claim is made available, otherwise
+only the result of this request.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -7464,7 +8408,7 @@ Note that this field cannot be set when spec.os.name is windows.<br/>
         <td>string</td>
         <td>
           procMount denotes the type of proc mount to use for the containers.
-The default is DefaultProcMount which uses the container runtime defaults for
+The default value is Default which uses the container runtime defaults for
 readonly paths and masked paths.
 This requires the ProcMountType feature flag to be enabled.
 Note that this field cannot be set when spec.os.name is windows.<br/>
@@ -7708,7 +8652,6 @@ Note that this field cannot be set when spec.os.name is windows.
         <td>
           type indicates which kind of seccomp profile will be applied.
 Valid options are:
-
 
 Localhost - a profile defined in a file on the node should be used.
 RuntimeDefault - the container runtime default profile should be used.
@@ -7974,8 +8917,9 @@ GRPC specifies an action involving a GRPC port.
           Service is the name of the service to place in the gRPC HealthCheckRequest
 (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
 
-
 If this is not specified, the default behavior is defined by gRPC.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -8204,9 +9148,7 @@ Defaults to false.<br/>
           RecursiveReadOnly specifies whether read-only mounts should be handled
 recursively.
 
-
 If ReadOnly is false, this field has no meaning and must be unspecified.
-
 
 If ReadOnly is true, and this field is set to Disabled, the mount is not made
 recursively read-only.  If this field is set to IfPossible, the mount is made
@@ -8215,10 +9157,8 @@ field is set to Enabled, the mount is made recursively read-only if it is
 supported by the container runtime, otherwise the pod will not be started and
 an error will be generated to indicate the reason.
 
-
 If this field is set to IfPossible or Enabled, MountPropagation must be set to
 None (or be unspecified, which defaults to None).
-
 
 If this field is not specified, it is treated as an equivalent of Disabled.<br/>
         </td>
@@ -8339,7 +9279,6 @@ user-initiated activities such as debugging. Ephemeral containers have no resour
 scheduling guarantees, and they will not be restarted when they exit or when a Pod is
 removed or restarted. The kubelet may evict a Pod if an ephemeral container causes the
 Pod to exceed its resource allocation.
-
 
 To add an ephemeral container, use the ephemeralcontainers subresource of an existing
 Pod. Ephemeral containers may not be removed or restarted.
@@ -8525,7 +9464,6 @@ Default is false<br/>
           If set, the name of the container from PodSpec that this ephemeral container targets.
 The ephemeral container will be run in the namespaces (IPC, PID, etc) of this container.
 If not set then the ephemeral container uses the namespaces configured in the Pod spec.
-
 
 The container runtime must implement support for this feature. If the runtime does not
 support namespace targeting then the result of setting this field is undefined.<br/>
@@ -8724,9 +9662,7 @@ Selects a key of a ConfigMap.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -8850,9 +9786,7 @@ Selects a key of a secret in the pod's namespace
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -8933,9 +9867,7 @@ The ConfigMap to select from
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -8975,9 +9907,7 @@ The Secret to select from
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -9713,8 +10643,9 @@ GRPC specifies an action involving a GRPC port.
           Service is the name of the service to place in the gRPC HealthCheckRequest
 (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
 
-
 If this is not specified, the default behavior is defined by gRPC.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -10099,8 +11030,9 @@ GRPC specifies an action involving a GRPC port.
           Service is the name of the service to place in the gRPC HealthCheckRequest
 (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
 
-
 If this is not specified, the default behavior is defined by gRPC.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -10297,10 +11229,8 @@ already allocated to the pod.
           Claims lists the names of resources, defined in spec.resourceClaims,
 that are used by this container.
 
-
 This is an alpha field and requires enabling the
 DynamicResourceAllocation feature gate.
-
 
 This field is immutable. It can only be set for containers.<br/>
         </td>
@@ -10352,6 +11282,15 @@ the Pod where this field is used. It makes that resource available
 inside a container.<br/>
         </td>
         <td>true</td>
+      </tr><tr>
+        <td><b>request</b></td>
+        <td>string</td>
+        <td>
+          Request is the name chosen for a request in the referenced claim.
+If empty, everything from the claim is made available, otherwise
+only the result of this request.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -10419,7 +11358,7 @@ Note that this field cannot be set when spec.os.name is windows.<br/>
         <td>string</td>
         <td>
           procMount denotes the type of proc mount to use for the containers.
-The default is DefaultProcMount which uses the container runtime defaults for
+The default value is Default which uses the container runtime defaults for
 readonly paths and masked paths.
 This requires the ProcMountType feature flag to be enabled.
 Note that this field cannot be set when spec.os.name is windows.<br/>
@@ -10663,7 +11602,6 @@ Note that this field cannot be set when spec.os.name is windows.
         <td>
           type indicates which kind of seccomp profile will be applied.
 Valid options are:
-
 
 Localhost - a profile defined in a file on the node should be used.
 RuntimeDefault - the container runtime default profile should be used.
@@ -10923,8 +11861,9 @@ GRPC specifies an action involving a GRPC port.
           Service is the name of the service to place in the gRPC HealthCheckRequest
 (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
 
-
 If this is not specified, the default behavior is defined by gRPC.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -11153,9 +12092,7 @@ Defaults to false.<br/>
           RecursiveReadOnly specifies whether read-only mounts should be handled
 recursively.
 
-
 If ReadOnly is false, this field has no meaning and must be unspecified.
-
 
 If ReadOnly is true, and this field is set to Disabled, the mount is not made
 recursively read-only.  If this field is set to IfPossible, the mount is made
@@ -11164,10 +12101,8 @@ field is set to Enabled, the mount is made recursively read-only if it is
 supported by the container runtime, otherwise the pod will not be started and
 an error will be generated to indicate the reason.
 
-
 If this field is set to IfPossible or Enabled, MountPropagation must be set to
 None (or be unspecified, which defaults to None).
-
 
 If this field is not specified, it is treated as an equivalent of Disabled.<br/>
         </td>
@@ -11254,9 +12189,7 @@ referenced object inside the same namespace.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -11674,9 +12607,7 @@ Selects a key of a ConfigMap.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -11800,9 +12731,7 @@ Selects a key of a secret in the pod's namespace
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -11883,9 +12812,7 @@ The ConfigMap to select from
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -11925,9 +12852,7 @@ The Secret to select from
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -12667,8 +13592,9 @@ GRPC specifies an action involving a GRPC port.
           Service is the name of the service to place in the gRPC HealthCheckRequest
 (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
 
-
 If this is not specified, the default behavior is defined by gRPC.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -13056,8 +13982,9 @@ GRPC specifies an action involving a GRPC port.
           Service is the name of the service to place in the gRPC HealthCheckRequest
 (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
 
-
 If this is not specified, the default behavior is defined by gRPC.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -13255,10 +14182,8 @@ More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-co
           Claims lists the names of resources, defined in spec.resourceClaims,
 that are used by this container.
 
-
 This is an alpha field and requires enabling the
 DynamicResourceAllocation feature gate.
-
 
 This field is immutable. It can only be set for containers.<br/>
         </td>
@@ -13310,6 +14235,15 @@ the Pod where this field is used. It makes that resource available
 inside a container.<br/>
         </td>
         <td>true</td>
+      </tr><tr>
+        <td><b>request</b></td>
+        <td>string</td>
+        <td>
+          Request is the name chosen for a request in the referenced claim.
+If empty, everything from the claim is made available, otherwise
+only the result of this request.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -13378,7 +14312,7 @@ Note that this field cannot be set when spec.os.name is windows.<br/>
         <td>string</td>
         <td>
           procMount denotes the type of proc mount to use for the containers.
-The default is DefaultProcMount which uses the container runtime defaults for
+The default value is Default which uses the container runtime defaults for
 readonly paths and masked paths.
 This requires the ProcMountType feature flag to be enabled.
 Note that this field cannot be set when spec.os.name is windows.<br/>
@@ -13622,7 +14556,6 @@ Note that this field cannot be set when spec.os.name is windows.
         <td>
           type indicates which kind of seccomp profile will be applied.
 Valid options are:
-
 
 Localhost - a profile defined in a file on the node should be used.
 RuntimeDefault - the container runtime default profile should be used.
@@ -13888,8 +14821,9 @@ GRPC specifies an action involving a GRPC port.
           Service is the name of the service to place in the gRPC HealthCheckRequest
 (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
 
-
 If this is not specified, the default behavior is defined by gRPC.<br/>
+          <br/>
+            <i>Default</i>: <br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -14118,9 +15052,7 @@ Defaults to false.<br/>
           RecursiveReadOnly specifies whether read-only mounts should be handled
 recursively.
 
-
 If ReadOnly is false, this field has no meaning and must be unspecified.
-
 
 If ReadOnly is true, and this field is set to Disabled, the mount is not made
 recursively read-only.  If this field is set to IfPossible, the mount is made
@@ -14129,10 +15061,8 @@ field is set to Enabled, the mount is made recursively read-only if it is
 supported by the container runtime, otherwise the pod will not be started and
 an error will be generated to indicate the reason.
 
-
 If this field is set to IfPossible or Enabled, MountPropagation must be set to
 None (or be unspecified, which defaults to None).
-
 
 If this field is not specified, it is treated as an equivalent of Disabled.<br/>
         </td>
@@ -14167,10 +15097,8 @@ SubPathExpr and SubPath are mutually exclusive.<br/>
 Specifies the OS of the containers in the pod.
 Some pod and container fields are restricted if this is set.
 
-
 If the OS field is set to linux, the following fields must be unset:
 -securityContext.windowsOptions
-
 
 If the OS field is set to windows, following fields must be unset:
 - spec.hostPID
@@ -14278,11 +15206,9 @@ Note that this field cannot be set when spec.os.name is windows.<br/>
 Some volume types allow the Kubelet to change the ownership of that volume
 to be owned by the pod:
 
-
 1. The owning GID will be the FSGroup
 2. The setgid bit is set (new files created in the volume will be owned by FSGroup)
 3. The permission bits are OR'd with rw-rw----
-
 
 If unset, the Kubelet will not modify the ownership and permissions of any volume.
 Note that this field cannot be set when spec.os.name is windows.<br/>
@@ -14367,12 +15293,25 @@ Note that this field cannot be set when spec.os.name is windows.<br/>
         <td><b>supplementalGroups</b></td>
         <td>[]integer</td>
         <td>
-          A list of groups applied to the first process run in each container, in addition
-to the container's primary GID, the fsGroup (if specified), and group memberships
-defined in the container image for the uid of the container process. If unspecified,
-no additional groups are added to any container. Note that group memberships
-defined in the container image for the uid of the container process are still effective,
-even if they are not included in this list.
+          A list of groups applied to the first process run in each container, in
+addition to the container's primary GID and fsGroup (if specified).  If
+the SupplementalGroupsPolicy feature is enabled, the
+supplementalGroupsPolicy field determines whether these are in addition
+to or instead of any group memberships defined in the container image.
+If unspecified, no additional groups are added, though group memberships
+defined in the container image may still be used, depending on the
+supplementalGroupsPolicy field.
+Note that this field cannot be set when spec.os.name is windows.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>supplementalGroupsPolicy</b></td>
+        <td>string</td>
+        <td>
+          Defines how supplemental groups of the first container processes are calculated.
+Valid values are "Merge" and "Strict". If not specified, "Merge" is used.
+(Alpha) Using the field requires the SupplementalGroupsPolicy feature gate to be enabled
+and the container runtime must implement support for this feature.
 Note that this field cannot be set when spec.os.name is windows.<br/>
         </td>
         <td>false</td>
@@ -14517,7 +15456,6 @@ Note that this field cannot be set when spec.os.name is windows.
         <td>
           type indicates which kind of seccomp profile will be applied.
 Valid options are:
-
 
 Localhost - a profile defined in a file on the node should be used.
 RuntimeDefault - the container runtime default profile should be used.
@@ -14801,7 +15739,6 @@ MatchLabelKeys cannot be set when LabelSelector isn't set.
 Keys that don't exist in the incoming pod labels will
 be ignored. A null or empty list means only match against labelSelector.
 
-
 This is a beta field and requires the MatchLabelKeysInPodTopologySpread feature gate to be enabled (enabled by default).<br/>
         </td>
         <td>false</td>
@@ -14819,7 +15756,6 @@ scheduler won't schedule more than maxSkew Pods to those domains.
 If value is nil, the constraint behaves as if MinDomains is equal to 1.
 Valid values are integers greater than 0.
 When value is not nil, WhenUnsatisfiable must be DoNotSchedule.
-
 
 For example, in a 3-zone cluster, MaxSkew is set to 2, MinDomains is set to 5 and pods with the same
 labelSelector spread as 2/2/2:
@@ -14842,7 +15778,6 @@ when calculating pod topology spread skew. Options are:
 - Honor: only nodes matching nodeAffinity/nodeSelector are included in the calculations.
 - Ignore: nodeAffinity/nodeSelector are ignored. All nodes are included in the calculations.
 
-
 If this value is nil, the behavior is equivalent to the Honor policy.
 This is a beta-level feature default enabled by the NodeInclusionPolicyInPodTopologySpread feature flag.<br/>
         </td>
@@ -14856,7 +15791,6 @@ pod topology spread skew. Options are:
 - Honor: nodes without taints, along with tainted nodes for which the incoming pod
 has a toleration, are included.
 - Ignore: node taints are ignored. All nodes are included.
-
 
 If this value is nil, the behavior is equivalent to the Ignore policy.
 This is a beta-level feature default enabled by the NodeInclusionPolicyInPodTopologySpread feature flag.<br/>
@@ -15050,7 +15984,6 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir<br/>
 The volume's lifecycle is tied to the pod that defines it - it will be created before the pod starts,
 and deleted when the pod is removed.
 
-
 Use this if:
 a) the volume is only needed while the pod runs,
 b) features of normal volumes like restoring from snapshot or capacity
@@ -15061,16 +15994,13 @@ d) the storage driver supports dynamic volume provisioning through
    information on the connection between this volume type
    and PersistentVolumeClaim).
 
-
 Use PersistentVolumeClaim or one of the vendor-specific
 APIs for volumes that persist for longer than the lifecycle
 of an individual pod.
 
-
 Use CSI for light-weight local ephemeral volumes if the CSI driver is meant to
 be used that way - see the documentation of the driver for
 more information.
-
 
 A pod can use both types of ephemeral volumes and
 persistent volumes at the same time.<br/>
@@ -15133,10 +16063,27 @@ More info: https://examples.k8s.io/volumes/glusterfs/README.md<br/>
 machine that is directly exposed to the container. This is generally
 used for system agents or other privileged things that are allowed
 to see the host machine. Most containers will NOT need this.
-More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath
----
-TODO(jonesdl) We need to restrict who can use host directory mounts and who can/can not
-mount host directories as read/write.<br/>
+More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#grafanaspecdeploymentspectemplatespecvolumesindeximage">image</a></b></td>
+        <td>object</td>
+        <td>
+          image represents an OCI object (a container image or artifact) pulled and mounted on the kubelet's host machine.
+The volume is resolved at pod startup depending on which PullPolicy value is provided:
+
+- Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+- Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+- IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+
+The volume gets re-resolved if the pod gets deleted and recreated, which means that new remote content will become available on pod recreation.
+A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
+The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
+The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
+The volume will be mounted read-only (ro) and non-executable files (noexec).
+Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath).
+The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -15267,8 +16214,7 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockst
           fsType is the filesystem type of the volume that you want to mount.
 Tip: Ensure that the filesystem type is supported by the host operating system.
 Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
-More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore
-TODO: how do we prevent errors in the filesystem from compromising the machine<br/>
+More info: https://kubernetes.io/docs/concepts/storage/volumes#awselasticblockstore<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -15339,6 +16285,8 @@ azureDisk represents an Azure Data Disk mount on the host and bind mount to the 
           fsType is Filesystem type to mount.
 Must be a filesystem type supported by the host operating system.
 Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
+          <br/>
+            <i>Default</i>: ext4<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -15354,6 +16302,8 @@ Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
         <td>
           readOnly Defaults to false (read/write). ReadOnly here will force
 the ReadOnly setting in VolumeMounts.<br/>
+          <br/>
+            <i>Default</i>: false<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -15495,9 +16445,7 @@ More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -15587,9 +16535,7 @@ to OpenStack.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -15650,9 +16596,7 @@ relative and may not contain the '..' path or start with '..'.<br/>
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -15811,9 +16755,7 @@ secret object contains more than one secret, all secret references are passed.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -16049,7 +16991,6 @@ ephemeral represents a volume that is handled by a cluster storage driver.
 The volume's lifecycle is tied to the pod that defines it - it will be created before the pod starts,
 and deleted when the pod is removed.
 
-
 Use this if:
 a) the volume is only needed while the pod runs,
 b) features of normal volumes like restoring from snapshot or capacity
@@ -16060,16 +17001,13 @@ d) the storage driver supports dynamic volume provisioning through
    information on the connection between this volume type
    and PersistentVolumeClaim).
 
-
 Use PersistentVolumeClaim or one of the vendor-specific
 APIs for volumes that persist for longer than the lifecycle
 of an individual pod.
 
-
 Use CSI for light-weight local ephemeral volumes if the CSI driver is meant to
 be used that way - see the documentation of the driver for
 more information.
-
 
 A pod can use both types of ephemeral volumes and
 persistent volumes at the same time.
@@ -16095,7 +17033,6 @@ pod.  The name of the PVC will be `<pod name>-<volume name>` where
 entry. Pod validation will reject the pod if the concatenated name
 is not valid for a PVC (for example, too long).
 
-
 An existing PVC with that name that is not owned by the pod
 will *not* be used for the pod to avoid using an unrelated
 volume by mistake. Starting the pod is then blocked until
@@ -16105,10 +17042,8 @@ owner reference to the pod once the pod exists. Normally
 this should not be necessary, but it may be useful when
 manually reconstructing a broken cluster.
 
-
 This field is read-only and no changes will be made by Kubernetes
 to the PVC after it has been created.
-
 
 Required, must not be nil.<br/>
         </td>
@@ -16130,7 +17065,6 @@ pod.  The name of the PVC will be `<pod name>-<volume name>` where
 entry. Pod validation will reject the pod if the concatenated name
 is not valid for a PVC (for example, too long).
 
-
 An existing PVC with that name that is not owned by the pod
 will *not* be used for the pod to avoid using an unrelated
 volume by mistake. Starting the pod is then blocked until
@@ -16140,10 +17074,8 @@ owner reference to the pod once the pod exists. Normally
 this should not be necessary, but it may be useful when
 manually reconstructing a broken cluster.
 
-
 This field is read-only and no changes will be made by Kubernetes
 to the PVC after it has been created.
-
 
 Required, must not be nil.
 
@@ -16290,7 +17222,7 @@ If the resource referred to by volumeAttributesClass does not exist, this Persis
 set to a Pending state, as reflected by the modifyVolumeStatus field, until such as a resource
 exists.
 More info: https://kubernetes.io/docs/concepts/storage/volume-attributes-classes/
-(Alpha) Using this field requires the VolumeAttributesClass feature gate to be enabled.<br/>
+(Beta) Using this field requires the VolumeAttributesClass feature gate to be enabled (off by default).<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -16582,8 +17514,7 @@ fc represents a Fibre Channel resource that is attached to a kubelet's host mach
         <td>
           fsType is the filesystem type to mount.
 Must be a filesystem type supported by the host operating system.
-Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
-TODO: how do we prevent errors in the filesystem from compromising the machine<br/>
+Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -16713,9 +17644,7 @@ scripts.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -16792,8 +17721,7 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk
           fsType is filesystem type of the volume that you want to mount.
 Tip: Ensure that the filesystem type is supported by the host operating system.
 Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
-More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk
-TODO: how do we prevent errors in the filesystem from compromising the machine<br/>
+More info: https://kubernetes.io/docs/concepts/storage/volumes#gcepersistentdisk<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -16925,9 +17853,6 @@ machine that is directly exposed to the container. This is generally
 used for system agents or other privileged things that are allowed
 to see the host machine. Most containers will NOT need this.
 More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath
----
-TODO(jonesdl) We need to restrict who can use host directory mounts and who can/can not
-mount host directories as read/write.
 
 <table>
     <thead>
@@ -16954,6 +17879,62 @@ More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath<br/>
           type for HostPath Volume
 Defaults to ""
 More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### Grafana.spec.deployment.spec.template.spec.volumes[index].image
+<sup><sup>[↩ Parent](#grafanaspecdeploymentspectemplatespecvolumesindex)</sup></sup>
+
+
+
+image represents an OCI object (a container image or artifact) pulled and mounted on the kubelet's host machine.
+The volume is resolved at pod startup depending on which PullPolicy value is provided:
+
+- Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+- Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+- IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+
+The volume gets re-resolved if the pod gets deleted and recreated, which means that new remote content will become available on pod recreation.
+A failure to resolve or pull the image during pod startup will block containers from starting and may add significant latency. Failures will be retried using normal volume backoff and will be reported on the pod reason and message.
+The types of objects that may be mounted by this volume are defined by the container runtime implementation on a host machine and at minimum must include all valid types supported by the container image field.
+The OCI object gets mounted in a single directory (spec.containers[*].volumeMounts.mountPath) by merging the manifest layers in the same way as for container images.
+The volume will be mounted read-only (ro) and non-executable files (noexec).
+Sub path mounts for containers are not supported (spec.containers[*].volumeMounts.subpath).
+The field spec.securityContext.fsGroupChangePolicy has no effect on this volume type.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>pullPolicy</b></td>
+        <td>string</td>
+        <td>
+          Policy for pulling OCI objects. Possible values are:
+Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+Defaults to Always if :latest tag is specified, or IfNotPresent otherwise.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>reference</b></td>
+        <td>string</td>
+        <td>
+          Required: Image or artifact reference to be used.
+Behaves in the same way as pod.spec.containers[*].image.
+Pull secrets will be assembled in the same way as for the container image by looking up node credentials, SA image pull secrets, and pod spec image pull secrets.
+More info: https://kubernetes.io/docs/concepts/containers/images
+This field is optional to allow higher level config management to default or override
+container images in workload controllers like Deployments and StatefulSets.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -17023,8 +18004,7 @@ is other than default (typically TCP ports 860 and 3260).<br/>
           fsType is the filesystem type of the volume that you want to mount.
 Tip: Ensure that the filesystem type is supported by the host operating system.
 Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
-More info: https://kubernetes.io/docs/concepts/storage/volumes#iscsi
-TODO: how do we prevent errors in the filesystem from compromising the machine<br/>
+More info: https://kubernetes.io/docs/concepts/storage/volumes#iscsi<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -17042,6 +18022,8 @@ If initiatorName is specified with iscsiInterface simultaneously, new iSCSI inte
         <td>
           iscsiInterface is the interface Name that uses an iSCSI transport.
 Defaults to 'default' (tcp).<br/>
+          <br/>
+            <i>Default</i>: default<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -17095,9 +18077,7 @@ secretRef is the CHAP Secret for iSCSI target and initiator authentication
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -17304,7 +18284,8 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
         <td><b><a href="#grafanaspecdeploymentspectemplatespecvolumesindexprojectedsourcesindex">sources</a></b></td>
         <td>[]object</td>
         <td>
-          sources is the list of volume projections<br/>
+          sources is the list of volume projections. Each entry in this list
+handles one source.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -17316,7 +18297,8 @@ mode, like fsGroup, and the result can be other mode bits set.<br/>
 
 
 
-Projection that may be projected along with other supported volume types
+Projection that may be projected along with other supported volume types.
+Exactly one of these fields must be set.
 
 <table>
     <thead>
@@ -17334,13 +18316,10 @@ Projection that may be projected along with other supported volume types
           ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
 of ClusterTrustBundle objects in an auto-updating file.
 
-
 Alpha, gated by the ClusterTrustBundleProjection feature gate.
-
 
 ClusterTrustBundle objects can either be selected by name, or by the
 combination of signer name and a label selector.
-
 
 Kubelet performs aggressive normalization of the PEM contents written
 into the pod filesystem.  Esoteric PEM features such as inter-block
@@ -17389,13 +18368,10 @@ may change the order over time.<br/>
 ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
 of ClusterTrustBundle objects in an auto-updating file.
 
-
 Alpha, gated by the ClusterTrustBundleProjection feature gate.
-
 
 ClusterTrustBundle objects can either be selected by name, or by the
 combination of signer name and a label selector.
-
 
 Kubelet performs aggressive normalization of the PEM contents written
 into the pod filesystem.  Esoteric PEM features such as inter-block
@@ -17583,9 +18559,7 @@ relative and may not contain the '..' path or start with '..'.<br/>
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -17848,9 +18822,7 @@ relative and may not contain the '..' path or start with '..'.<br/>
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -18077,8 +19049,7 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
           fsType is the filesystem type of the volume that you want to mount.
 Tip: Ensure that the filesystem type is supported by the host operating system.
 Examples: "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
-More info: https://kubernetes.io/docs/concepts/storage/volumes#rbd
-TODO: how do we prevent errors in the filesystem from compromising the machine<br/>
+More info: https://kubernetes.io/docs/concepts/storage/volumes#rbd<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -18088,6 +19059,8 @@ TODO: how do we prevent errors in the filesystem from compromising the machine<b
           keyring is the path to key ring for RBDUser.
 Default is /etc/ceph/keyring.
 More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
+          <br/>
+            <i>Default</i>: /etc/ceph/keyring<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -18097,6 +19070,8 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
           pool is the rados pool name.
 Default is rbd.
 More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
+          <br/>
+            <i>Default</i>: rbd<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -18125,6 +19100,8 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
           user is the rados user name.
 Default is admin.
 More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it<br/>
+          <br/>
+            <i>Default</i>: admin<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -18158,9 +19135,7 @@ More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -18215,6 +19190,8 @@ sensitive information. If this is not provided, Login operation will fail.<br/>
 Must be a filesystem type supported by the host operating system.
 Ex. "ext4", "xfs", "ntfs".
 Default is "xfs".<br/>
+          <br/>
+            <i>Default</i>: xfs<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -18245,6 +19222,8 @@ the ReadOnly setting in VolumeMounts.<br/>
         <td>
           storageMode indicates whether the storage for a volume should be ThickProvisioned or ThinProvisioned.
 Default is ThinProvisioned.<br/>
+          <br/>
+            <i>Default</i>: ThinProvisioned<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -18291,9 +19270,7 @@ sensitive information. If this is not provided, Login operation will fail.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -18507,9 +19484,7 @@ credentials.  If not specified, default values will be attempted.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -18612,6 +19587,15 @@ External enables you to configure external grafana instances that is not managed
           The API key to talk to the external grafana instance, you need to define ether apiKey or adminUser/adminPassword.<br/>
         </td>
         <td>false</td>
+      </tr><tr>
+        <td><b><a href="#grafanaspecexternaltls">tls</a></b></td>
+        <td>object</td>
+        <td>
+          DEPRECATED, use top level `tls` instead.<br/>
+          <br/>
+            <i>Validations</i>:<li>(has(self.insecureSkipVerify) && !(has(self.certSecretRef))) || (has(self.certSecretRef) && !(has(self.insecureSkipVerify))): insecureSkipVerify and certSecretRef cannot be set at the same time</li>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -18647,9 +19631,7 @@ AdminPassword key to talk to the external grafana instance.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -18696,9 +19678,7 @@ AdminUser key to talk to the external grafana instance.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -18745,9 +19725,7 @@ The API key to talk to the external grafana instance, you need to define ether a
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -18757,6 +19735,74 @@ TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://git
         <td>boolean</td>
         <td>
           Specify whether the Secret or its key must be defined<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### Grafana.spec.external.tls
+<sup><sup>[↩ Parent](#grafanaspecexternal)</sup></sup>
+
+
+
+DEPRECATED, use top level `tls` instead.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#grafanaspecexternaltlscertsecretref">certSecretRef</a></b></td>
+        <td>object</td>
+        <td>
+          Use a secret as a reference to give TLS Certificate information<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>insecureSkipVerify</b></td>
+        <td>boolean</td>
+        <td>
+          Disable the CA check of the server<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### Grafana.spec.external.tls.certSecretRef
+<sup><sup>[↩ Parent](#grafanaspecexternaltls)</sup></sup>
+
+
+
+Use a secret as a reference to give TLS Certificate information
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          name is unique within a namespace to reference a secret resource.<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>namespace</b></td>
+        <td>string</td>
+        <td>
+          namespace defines the space within which the secret name must be unique.<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -19093,7 +20139,6 @@ Both these may change in the future.
 Incoming requests are matched against the host before the
 IngressRuleValue. If the host is unspecified, the Ingress routes all
 traffic based on the specified IngressRuleValue.
-
 
 host can be "precise" which is a domain name without the terminating dot of
 a network host (e.g. "foo.bar.com") or "wildcard", which is a domain name
@@ -19785,10 +20830,8 @@ ResourceRequirements describes the compute resource requirements.
           Claims lists the names of resources, defined in spec.resourceClaims,
 that are used by this container.
 
-
 This is an alpha field and requires enabling the
 DynamicResourceAllocation feature gate.
-
 
 This field is immutable. It can only be set for containers.<br/>
         </td>
@@ -19840,6 +20883,15 @@ the Pod where this field is used. It makes that resource available
 inside a container.<br/>
         </td>
         <td>true</td>
+      </tr><tr>
+        <td><b>request</b></td>
+        <td>string</td>
+        <td>
+          Request is the name chosen for a request in the referenced claim.
+If empty, everything from the claim is made available, otherwise
+only the result of this request.<br/>
+        </td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -20222,7 +21274,6 @@ verify.<br/>
           insecureEdgeTerminationPolicy indicates the desired behavior for insecure connections to a route. While
 each router may make its own decisions on which ports to expose, this is normally port 80.
 
-
 * Allow - traffic is sent to the server on the insecure port (default)
 * Disable - no traffic is allowed on the insecure port.
 * Redirect - clients are redirected to the secure port.<br/>
@@ -20425,7 +21476,6 @@ be initialized from the clusterIP field.  If this field is specified,
 clients must ensure that clusterIPs[0] and clusterIP have the same
 value.
 
-
 This field may hold a maximum of two entries (dual-stack IPs, in either order).
 These IPs must correspond to the values of the ipFamilies field. Both
 clusterIPs and ipFamilies are governed by the ipFamilyPolicy field.
@@ -20517,7 +21567,6 @@ changing the primary IP family of the Service. Valid values are "IPv4"
 and "IPv6".  This field only applies to Services of types ClusterIP,
 NodePort, and LoadBalancer, and does apply to "headless" services.
 This field will be wiped when updating a Service to type ExternalName.
-
 
 This field may hold a maximum of two entries (dual-stack families, in
 either order).  These families must correspond to the values of the
@@ -20703,16 +21752,13 @@ This is used as a hint for implementations to offer richer behavior for protocol
 This field follows standard Kubernetes label syntax.
 Valid values are either:
 
-
 * Un-prefixed protocol names - reserved for IANA standard service names (as per
 RFC-6335 and https://www.iana.org/assignments/service-names).
-
 
 * Kubernetes-defined prefixed names:
   * 'kubernetes.io/h2c' - HTTP/2 prior knowledge over cleartext as described in https://www.rfc-editor.org/rfc/rfc9113.html#name-starting-http-2-with-prior-
   * 'kubernetes.io/ws'  - WebSocket over cleartext as described in https://www.rfc-editor.org/rfc/rfc6455
   * 'kubernetes.io/wss' - WebSocket over TLS as described in https://www.rfc-editor.org/rfc/rfc6455
-
 
 * Other protocols should use implementation-defined prefixed names such as
 mycompany.com/my-custom-protocol.<br/>
@@ -20905,9 +21951,7 @@ referenced object inside the same namespace.
 This field is effectively required, but due to backwards compatibility is
 allowed to be empty. Instances of this type with an empty value here are
 almost certainly wrong.
-TODO: Add other useful fields. apiVersion, kind, uid?
-More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-TODO: Drop `kubebuilder:default` when controller-gen doesn't need it https://github.com/kubernetes-sigs/kubebuilder/issues/3896.<br/>
+More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names<br/>
           <br/>
             <i>Default</i>: <br/>
         </td>
@@ -20956,22 +22000,6 @@ ObjectMeta contains only a [subset of the fields included in k8s.io/apimachinery
 
 
 ObjectReference contains enough information to let you inspect or modify the referred object.
----
-New uses of this type are discouraged because of difficulty describing its usage when embedded in APIs.
- 1. Ignored fields.  It includes many fields which are not generally honored.  For instance, ResourceVersion and FieldPath are both very rarely valid in actual usage.
- 2. Invalid usage help.  It is impossible to add specific help for individual usage.  In most embedded usages, there are particular
-    restrictions like, "must refer only to types A and B" or "UID not honored" or "name must be restricted".
-    Those cannot be well described when embedded.
- 3. Inconsistent validation.  Because the usages are different, the validation rules are different by usage, which makes it hard for users to predict what will happen.
- 4. The fields are both imprecise and overly precise.  Kind is not a precise mapping to a URL. This can produce ambiguity
-    during interpretation and require a REST mapping.  In most cases, the dependency is on the group,resource tuple
-    and the version of the actual struct is irrelevant.
- 5. We cannot easily change it.  Because this type is embedded in many locations, updates to this type
-    will affect numerous schemas.  Don't make new APIs embed an underspecified API type they do not control.
-
-
-Instead of using this type, create a locally provided and used type that is well-focused on your reference.
-For example, ServiceReferences for admission registration: https://github.com/kubernetes/api/blob/release-1.17/admissionregistration/v1/types.go#L533 .
 
 <table>
     <thead>
@@ -20999,8 +22027,7 @@ For example, if the object reference is to a container within a pod, this would 
 "spec.containers{name}" (where "name" refers to the name of the container that triggered
 the event) or if no container name is specified "spec.containers[2]" (container with
 index 2 in this pod). This syntax is chosen only to have some well-defined way of
-referencing a part of an object.
-TODO: this design is not final and this field is subject to change in the future.<br/>
+referencing a part of an object.<br/>
         </td>
         <td>false</td>
       </tr><tr>
