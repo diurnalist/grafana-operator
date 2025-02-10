@@ -1817,6 +1817,11 @@ func (in *GrafanaStatus) DeepCopyInto(out *GrafanaStatus) {
 		*out = make(NamespacedResourceList, len(*in))
 		copy(*out, *in)
 	}
+	if in.LibraryPanels != nil {
+		in, out := &in.LibraryPanels, &out.LibraryPanels
+		*out = make(NamespacedResourceList, len(*in))
+		copy(*out, *in)
+	}
 	if in.Datasources != nil {
 		in, out := &in.Datasources, &out.Datasources
 		*out = make(NamespacedResourceList, len(*in))
